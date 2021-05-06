@@ -94,6 +94,7 @@ struct sc_screen_params {
     uint16_t window_height;
 
     bool window_borderless;
+    bool window_focus;
 
     enum sc_orientation orientation;
     bool mipmaps;

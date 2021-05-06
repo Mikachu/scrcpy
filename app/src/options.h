@@ -293,6 +293,7 @@ struct scrcpy_options {
     bool turn_screen_off;
     enum sc_key_inject_mode key_inject_mode;
     bool window_borderless;
+    bool window_focus;
     bool mipmaps;
     bool stay_awake;
     bool force_adb_forward;

@@ -3,7 +3,9 @@
 #include <assert.h>
 #include <string.h>
 #include <SDL2/SDL.h>
-
+#include <SDL2/SDL_syswm.h>
+#include <X11/Xutil.h>
+ 
 #include "events.h"
 #include "icon.h"
 #include "options.h"
@@ -464,6 +466,26 @@ sc_screen_init(struct sc_screen *screen,
 #ifndef NDEBUG
     screen->open = false;
 #endif
+
+    if (!params->window_focus) {
+        LOGI("Disabling input focus");
+        SDL_SysWMinfo info;
+        SDL_VERSION(&info.version)
+        if (SDL_GetWindowWMInfo(screen->window, &info)) {
+            XWMHints *hint;
+            hint = XGetWMHints(info.info.x11.display, info.info.x11.window);
+            if (hint) {
+                hint->input = 0;
+                hint->flags |= InputHint;
+                XSetWMHints(info.info.x11.display, info.info.x11.window, hint);
+                XFree(hint);
+            } else {
+                LOGI("XGetWMHints() failed");
+            }
+        } else {
+            LOGI("SDL_GetWindowWMInfo() failed: %s", SDL_GetError());
+        }
+    }
 
     if (!screen->video && sc_screen_is_relative_mode(screen)) {
         // Capture mouse immediately if video mirroring is disabled

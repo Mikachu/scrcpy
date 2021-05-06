@@ -118,6 +118,7 @@ dependencies = [
     dependency('libavutil', static: static),
     dependency('libswresample', static: static),
     dependency('sdl2', version: '>= 2.0.5', static: static),
+    dependency('X11')
 ]
 
 if v4l2_support

@@ -32,6 +32,7 @@ enum {
     OPT_WINDOW_WIDTH,
     OPT_WINDOW_HEIGHT,
     OPT_WINDOW_BORDERLESS,
+    OPT_WINDOW_FOCUS,
     OPT_MAX_FPS,
     OPT_LOCK_VIDEO_ORIENTATION,
     OPT_DISPLAY,
@@ -1028,6 +1029,11 @@ static const struct sc_option options[] = {
         .longopt_id = OPT_WINDOW_BORDERLESS,
         .longopt = "window-borderless",
         .text = "Disable window decorations (display borderless window)."
+    },
+    {
+        .longopt_id = OPT_WINDOW_FOCUS,
+        .longopt = "focus",
+        .text = "Enable window focus.",
     },
     {
         .longopt_id = OPT_WINDOW_TITLE,
@@ -2539,6 +2545,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 break;
             case OPT_WINDOW_BORDERLESS:
                 opts->window_borderless = true;
+                break;
+            case OPT_WINDOW_FOCUS:
+                opts->window_focus = true;
                 break;
             case OPT_PUSH_TARGET:
                 opts->push_target = optarg;
