@@ -312,4 +312,8 @@ public final class Device {
         }
         am.startActivity(launchIntent, options);
     }
+
+    public static void sendBroadcast(Intent intent) {
+        ServiceManager.getActivityManager().sendBroadcast(intent);
+    }
 }
