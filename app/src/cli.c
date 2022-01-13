@@ -57,7 +57,7 @@ enum {
     OPT_V4L2_BUFFER,
     OPT_TUNNEL_HOST,
     OPT_TUNNEL_PORT,
-    OPT_NO_CLIPBOARD_AUTOSYNC,
+    OPT_CLIPBOARD_AUTOSYNC,
     OPT_TCPIP,
     OPT_RAW_KEY_EVENTS,
     OPT_NO_DOWNSIZE_ON_ERROR,
@@ -652,13 +652,12 @@ static const struct sc_option options[] = {
                 "This option disables this cleanup."
     },
     {
-        .longopt_id = OPT_NO_CLIPBOARD_AUTOSYNC,
-        .longopt = "no-clipboard-autosync",
-        .text = "By default, scrcpy automatically synchronizes the computer "
+        .longopt_id = OPT_CLIPBOARD_AUTOSYNC,
+        .longopt = "clipboard-autosync",
+        .text = "With this, scrcpy automatically synchronizes the computer "
                 "clipboard to the device clipboard before injecting Ctrl+v, "
                 "and the device clipboard to the computer clipboard whenever "
-                "it changes.\n"
-                "This option disables this automatic synchronization."
+                "it changes."
     },
     {
         .longopt_id = OPT_NO_DOWNSIZE_ON_ERROR,
@@ -2648,8 +2647,8 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                     return false;
                 }
                 break;
-            case OPT_NO_CLIPBOARD_AUTOSYNC:
-                opts->clipboard_autosync = false;
+            case OPT_CLIPBOARD_AUTOSYNC:
+                opts->clipboard_autosync = true;
                 break;
             case OPT_TCPIP:
                 opts->tcpip = true;
