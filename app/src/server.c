@@ -15,7 +15,7 @@
 #include "util/process.h"
 #include "util/str.h"
 
-#define SC_SERVER_FILENAME "scrcpy-server"
+#define SC_SERVER_FILENAME "scrcpy-server-3.3.4"
 
 #define SC_SERVER_PATH_DEFAULT PREFIX "/share/scrcpy/" SC_SERVER_FILENAME
 #define SC_DEVICE_SERVER_PATH "/data/local/tmp/scrcpy-server.jar"
