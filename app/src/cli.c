@@ -1676,15 +1676,15 @@ parse_orientation(const char *s, enum sc_orientation *orientation) {
         *orientation = SC_ORIENTATION_0;
         return true;
     }
-    if (!strcmp(s, "90")) {
+    if (!strcmp(s, "90") || !strcmp(s, "3")) {
         *orientation = SC_ORIENTATION_90;
         return true;
     }
-    if (!strcmp(s, "180")) {
+    if (!strcmp(s, "180") || !strcmp(s, "2")) {
         *orientation = SC_ORIENTATION_180;
         return true;
     }
-    if (!strcmp(s, "270")) {
+    if (!strcmp(s, "270") || !strcmp(s, "1")) {
         *orientation = SC_ORIENTATION_270;
         return true;
     }
@@ -2451,9 +2451,11 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                      "--mouse=uhid instead.");
                 return false;
             case OPT_LOCK_VIDEO_ORIENTATION:
-                LOGE("--lock-video-orientation has been removed, use "
-                     "--capture-orientation instead.");
-                return false;
+                if (!parse_orientation(optarg, &opts->capture_orientation)) {
+                    return false;
+                }
+                opts->capture_orientation_lock = SC_ORIENTATION_LOCKED_VALUE;
+                break;
             case OPT_CAPTURE_ORIENTATION:
                 if (!parse_capture_orientation(optarg,
                                           &opts->capture_orientation,
