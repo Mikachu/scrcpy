@@ -1,4 +1,4 @@
-#compdef scrcpy scrcpy.exe
+#compdef scrcpy scrcpy.exe -P scrcpy-*
 #
 # name: scrcpy
 # auth: hltdev [hltdev8642@gmail.com]
@@ -6,6 +6,8 @@
 #
 
 local arguments
+local expl curcontext="$curcontext" state line ret=1
+typeset -A opt_args
 
 arguments=(
     '--always-on-top[Make scrcpy window always on top \(above other windows\)]'
@@ -86,7 +88,7 @@ arguments=(
     {-S,--turn-screen-off}'[Turn the device screen off immediately]'
     '--screen-off-timeout=[Set the screen off timeout in seconds]'
     '--shortcut-mod=[\[key1,key2+key3,...\] Specify the modifiers to use for scrcpy shortcuts]:shortcut mod:(lctrl rctrl lalt ralt lsuper rsuper)'
-    '--start-app=[Start an Android app]'
+    '--start-app=[Start an Android app]:app:->apps'
     {-t,--show-touches}'[Show physical touches]'
     '--tcpip[\(optional \[ip\:port\]\) Configure and connect the device over TCP/IP]'
     '--time-limit=[Set the maximum mirroring time, in seconds]'
@@ -110,4 +112,13 @@ arguments=(
     '--window-height=[Set the initial window height]'
 )
 
-_arguments -s $arguments
+_arguments -C -s $arguments && ret=0
+
+case $state in
+  apps)
+    local installed_packages=(${$( adb shell pm list packages )//#package:/})
+    compadd ${installed_packages} && ret=0
+    ;;
+esac
+
+return ret
