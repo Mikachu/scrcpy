@@ -103,7 +103,7 @@ enum {
     OPT_HID_MOUSE_DEPRECATED,
     OPT_NO_WINDOW,
     OPT_MOUSE_BIND,
-    OPT_NO_MOUSE_HOVER,
+    OPT_MOUSE_HOVER,
     OPT_AUDIO_DUP,
     OPT_GAMEPAD,
     OPT_NEW_DISPLAY,
@@ -684,9 +684,9 @@ static const struct sc_option options[] = {
                 "quality. This option disables the generation of mipmaps.",
     },
     {
-        .longopt_id = OPT_NO_MOUSE_HOVER,
-        .longopt = "no-mouse-hover",
-        .text = "Do not forward mouse hover (mouse motion without any clicks) "
+        .longopt_id = OPT_MOUSE_HOVER,
+        .longopt = "mouse-hover",
+        .text = "Forward mouse hover (mouse motion without any clicks) "
                 "events.",
     },
     {
@@ -2443,8 +2443,8 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                     return false;
                 }
                 break;
-            case OPT_NO_MOUSE_HOVER:
-                opts->mouse_hover = false;
+            case OPT_MOUSE_HOVER:
+                opts->mouse_hover = true;
                 break;
             case OPT_HID_MOUSE_DEPRECATED:
                 LOGE("--hid-mouse has been removed, use --mouse=aoa or "
@@ -3068,8 +3068,8 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
     }
 
     if (opts->mouse_input_mode != SC_MOUSE_INPUT_MODE_SDK
-            && !opts->mouse_hover) {
-        LOGE("--no-mouse-over is specific to --mouse=sdk");
+            && opts->mouse_hover) {
+        LOGE("--mouse-over is specific to --mouse=sdk");
         return false;
     }
 
