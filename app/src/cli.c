@@ -2882,6 +2882,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
         opts->power_on = false;
     }
 
+    if (!opts->video_playback)
+        opts->window = false;
+
     if (!opts->audio) {
         opts->audio_playback = false;
     }
