@@ -2517,6 +2517,7 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 if (!parse_log_level(optarg, &opts->log_level)) {
                     return false;
                 }
+                sc_set_log_level(opts->log_level);
                 break;
             case 'w':
                 opts->stay_awake = true;
@@ -2887,12 +2888,12 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
 
     if (opts->video && !opts->video_playback && !opts->record_filename
             && !v4l2) {
-        LOGI("No video playback, no recording, no V4L2 sink: video disabled");
+        LOGV("No video playback, no recording, no V4L2 sink: video disabled");
         opts->video = false;
     }
 
     if (opts->audio && !opts->audio_playback && !opts->record_filename) {
-        LOGI("No audio playback, no recording: audio disabled");
+        LOGV("No audio playback, no recording: audio disabled");
         opts->audio = false;
     }
 
@@ -2911,7 +2912,7 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             // Use 50 ms audio buffer by default, but use a higher value for
             // FLAC, which is not low latency (the default encoder produces
             // blocks of 4096 samples, which represent ~85.333ms).
-            LOGI("FLAC audio: audio buffer increased to 120 ms (use "
+            LOGV("FLAC audio: audio buffer increased to 120 ms (use "
                  "--audio-buffer to set a custom value)");
             opts->audio_buffer = SC_TICK_FROM_MS(120);
         } else {
@@ -2952,7 +2953,7 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             if (otg) {
                 opts->mouse_input_mode = SC_MOUSE_INPUT_MODE_AOA;
             } else if (!opts->video_playback) {
-                LOGI("No video mirroring, SDK mouse disabled");
+                LOGV("No video mirroring, SDK mouse disabled");
                 opts->mouse_input_mode = SC_MOUSE_INPUT_MODE_DISABLED;
             } else {
                 opts->mouse_input_mode = SC_MOUSE_INPUT_MODE_SDK;
@@ -3116,7 +3117,7 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
         }
 
         if (opts->control) {
-            LOGI("Camera video source: control disabled");
+            LOGV("Camera video source: control disabled");
             opts->control = false;
         }
     } else if (opts->camera_id
@@ -3144,7 +3145,7 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
         // Select the audio source according to the video source
         if (opts->video_source == SC_VIDEO_SOURCE_DISPLAY) {
             if (opts->audio_dup) {
-                LOGI("Audio duplication enabled: audio source switched to "
+                LOGV("Audio duplication enabled: audio source switched to "
                      "\"playback\"");
                 opts->audio_source = SC_AUDIO_SOURCE_PLAYBACK;
             } else {
@@ -3152,7 +3153,7 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             }
         } else {
             opts->audio_source = SC_AUDIO_SOURCE_MIC;
-            LOGI("Camera video source: microphone audio source selected");
+            LOGV("Camera video source: microphone audio source selected");
         }
     }
 

@@ -982,7 +982,7 @@ run_server(void *data) {
             // No explicit selection, check $ANDROID_SERIAL
             const char *env_serial = getenv("ANDROID_SERIAL");
             if (env_serial) {
-                LOGI("Using ANDROID_SERIAL: %s", env_serial);
+                LOGV("Using ANDROID_SERIAL: %s", env_serial);
                 selector.type = SC_ADB_DEVICE_SELECT_SERIAL;
                 selector.serial = env_serial;
             } else {

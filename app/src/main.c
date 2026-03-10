@@ -31,9 +31,6 @@ main_scrcpy(int argc, char *argv[]) {
     setbuf(stderr, NULL);
 #endif
 
-    printf("scrcpy " SCRCPY_VERSION
-           " <https://github.com/Genymobile/scrcpy>\n");
-
     struct scrcpy_cli_args args = {
         .opts = scrcpy_options_default,
         .help = false,
@@ -53,6 +50,8 @@ main_scrcpy(int argc, char *argv[]) {
     }
 
     sc_set_log_level(args.opts.log_level);
+    LOGV("scrcpy " SCRCPY_VERSION
+         " <https://github.com/Genymobile/scrcpy>\n");
 
     if (args.help) {
         scrcpy_print_usage(argv[0]);

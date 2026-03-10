@@ -687,8 +687,8 @@ sc_adb_select_device(struct sc_intr *intr,
         return false;
     }
 
-    LOGI("ADB device found:");
-    sc_adb_devices_log(SC_LOG_LEVEL_INFO, vec.data, vec.size);
+    LOGV("ADB device found:");
+    sc_adb_devices_log(SC_LOG_LEVEL_VERBOSE, vec.data, vec.size);
 
     // Move devics into out_device (do not destroy device)
     sc_adb_device_move(out_device, device);
