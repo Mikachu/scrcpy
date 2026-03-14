@@ -112,7 +112,7 @@ enum {
     OPT_SCREEN_OFF_TIMEOUT,
     OPT_CAPTURE_ORIENTATION,
     OPT_ANGLE,
-    OPT_NO_VD_SYSTEM_DECORATIONS,
+    OPT_VD_SYSTEM_DECORATIONS,
     OPT_NO_VD_DESTROY_CONTENT,
     OPT_DISPLAY_IME_POLICY,
 };
@@ -704,9 +704,9 @@ static const struct sc_option options[] = {
                 "destroyed.",
     },
     {
-        .longopt_id = OPT_NO_VD_SYSTEM_DECORATIONS,
-        .longopt = "no-vd-system-decorations",
-        .text = "Disable virtual display system decorations flag.",
+        .longopt_id = OPT_VD_SYSTEM_DECORATIONS,
+        .longopt = "vd-system-decorations",
+        .text = "Enable virtual display system decorations flag.",
     },
     {
         .longopt_id = OPT_NO_VIDEO,
@@ -2823,8 +2823,8 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             case OPT_NO_VD_DESTROY_CONTENT:
                 opts->vd_destroy_content = false;
                 break;
-            case OPT_NO_VD_SYSTEM_DECORATIONS:
-                opts->vd_system_decorations = false;
+            case OPT_VD_SYSTEM_DECORATIONS:
+                opts->vd_system_decorations = true;
                 break;
             case OPT_DISPLAY_IME_POLICY:
                 if (!parse_display_ime_policy(optarg,
