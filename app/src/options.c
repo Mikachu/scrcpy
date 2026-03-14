@@ -20,6 +20,7 @@ const struct scrcpy_options scrcpy_options_default = {
     .log_level = SC_LOG_LEVEL_INFO,
     .video_codec = SC_CODEC_H264,
     .audio_codec = SC_CODEC_OPUS,
+    .prefer_libopus = true,
     .video_source = SC_VIDEO_SOURCE_DISPLAY,
     .audio_source = SC_AUDIO_SOURCE_AUTO,
     .record_format = SC_RECORD_FORMAT_AUTO,

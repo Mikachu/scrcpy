@@ -245,6 +245,7 @@ struct scrcpy_options {
     enum sc_log_level log_level;
     enum sc_codec video_codec;
     enum sc_codec audio_codec;
+    bool prefer_libopus;
     enum sc_video_source video_source;
     enum sc_audio_source audio_source;
     enum sc_record_format record_format;

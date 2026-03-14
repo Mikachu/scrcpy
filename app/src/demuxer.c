@@ -137,6 +137,7 @@ sc_demuxer_recv_packet(struct sc_demuxer *demuxer, AVPacket *packet) {
 static int
 run_demuxer(void *data) {
     struct sc_demuxer *demuxer = data;
+    struct scrcpy_options *options = demuxer->cbs_userdata;
 
     // Flag to report end-of-stream (i.e. device disconnected)
     enum sc_demuxer_status status = SC_DEMUXER_STATUS_ERROR;
@@ -172,6 +173,13 @@ run_demuxer(void *data) {
     }
 
     const AVCodec *codec = avcodec_find_decoder(codec_id);
+    if (options->prefer_libopus &&
+        codec_id == AV_CODEC_ID_OPUS)
+    {
+        const AVCodec *libopus = avcodec_find_decoder_by_name("libopus");
+        if (libopus)
+            codec = libopus;
+    }
     if (!codec) {
         LOGE("Demuxer '%s': stream disabled due to missing decoder",
              demuxer->name);
