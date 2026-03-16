@@ -41,6 +41,14 @@ sc_decoder_push(struct sc_decoder *decoder, const AVPacket *packet) {
         return true;
     }
 
+    // don't push anything if all we have is silence
+    if (decoder->ctx->codec_id == AV_CODEC_ID_OPUS && packet->size == 3 &&
+        (packet->data[0] == 0xF8 || packet->data[0] == 0xFC) && 
+        packet->data[1] == 0xFF && packet->data[2] == 0xFE) {
+        
+        return true; 
+    }
+
     int ret = avcodec_send_packet(decoder->ctx, packet);
     if (ret < 0 && ret != AVERROR(EAGAIN)) {
         LOGE("Decoder '%s': could not send video packet: %d",
