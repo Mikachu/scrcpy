@@ -730,11 +730,6 @@ sc_input_manager_process_mouse_button(struct sc_input_manager *im,
         return;
     }
 
-    if (!down) {
-        // Mark the button as released
-        im->mouse_buttons_state &= ~button;
-    }
-
     SDL_Keymod keymod = SDL_GetModState();
     bool ctrl_pressed = keymod & KMOD_CTRL;
     bool shift_pressed = keymod & KMOD_SHIFT;
@@ -776,16 +771,25 @@ sc_input_manager_process_mouse_button(struct sc_input_manager *im,
                     }
                 }
                 return;
+            case SC_MOUSE_BINDING_ZOOM:
+                ctrl_pressed = true;
+                button = SC_MOUSE_BUTTON_LEFT;
+                break;
             default:
                 assert(binding == SC_MOUSE_BINDING_CLICK);
                 break;
         }
     }
 
+    if (!down) {
+        // Mark the button as released
+        im->mouse_buttons_state &= ~button;
+    }
+
     // double-click on black borders resizes to fit the device screen
     bool video = im->screen->video;
     bool mouse_relative_mode = im->mp && im->mp->relative_mode;
-    if (video && !mouse_relative_mode && event->button == SDL_BUTTON_LEFT
+    if (video && !mouse_relative_mode && button == SC_MOUSE_BUTTON_LEFT
             && event->clicks == 2) {
         int32_t x = event->x;
         int32_t y = event->y;
@@ -810,7 +814,7 @@ sc_input_manager_process_mouse_button(struct sc_input_manager *im,
         im->mouse_buttons_state |= button;
     }
 
-    bool change_vfinger = event->button == SDL_BUTTON_LEFT &&
+    bool change_vfinger = button == SC_MOUSE_BUTTON_LEFT &&
             ((down && !im->vfinger_down && (ctrl_pressed || shift_pressed)) ||
              (!down && im->vfinger_down));
     bool use_finger = im->vfinger_down || change_vfinger;

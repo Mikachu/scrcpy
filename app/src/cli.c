@@ -2305,9 +2305,12 @@ parse_mouse_binding(char c, enum sc_mouse_binding *b) {
         case 'n':
             *b = SC_MOUSE_BINDING_EXPAND_NOTIFICATION_PANEL;
             return true;
+        case 'z':
+            *b = SC_MOUSE_BINDING_ZOOM;
+            return true;
         default:
             LOGE("Invalid mouse binding: '%c' "
-                 "(expected '+', '-', 'b', 'h', 's' or 'n')", c);
+                 "(expected '+', '-', 'b', 'h', 's' 'z', or 'n')", c);
             return false;
     }
 }
