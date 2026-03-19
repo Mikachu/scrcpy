@@ -7,6 +7,7 @@
 #endif
 #define SDL_MAIN_HANDLED // avoid link error on Linux Windows Subsystem
 #include <SDL2/SDL.h>
+#include <sched.h>
 
 #include "cli.h"
 #include "options.h"
@@ -67,6 +68,14 @@ main_scrcpy(int argc, char *argv[]) {
 
     // The current thread is the main thread
     SC_MAIN_THREAD_ID = sc_thread_get_id();
+
+#ifdef SCHED_ISO
+    if (args.opts.audio_playback) {
+        struct sched_param param;
+        param.sched_priority = 0;
+        sched_setscheduler(0, SCHED_ISO, &param);
+    }
+#endif
 
 #ifdef SCRCPY_LAVF_REQUIRES_REGISTER_ALL
     av_register_all();
