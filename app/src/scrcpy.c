@@ -945,6 +945,8 @@ aoa_complete:
         }
     }
 
+    SDL_SetHintWithPriority("SDL_POLL_INTERVAL", "1000", SDL_HINT_NORMAL);
+
     ret = event_loop(s, options->window);
     terminate_event_loop();
     LOGD("quit...");
