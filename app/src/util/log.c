@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <libavutil/log.h>
+#include <alsa/asoundlib.h>
 
 static SDL_LogPriority
 log_level_sc_to_sdl(enum sc_log_level level) {
@@ -47,11 +48,20 @@ log_level_sdl_to_sc(SDL_LogPriority priority) {
     }
 }
 
+static void sc_no_alsa_error(const char *file, int line, const char *function, int err, const char *fmt, ...) {
+    (void) file; (void) line; (void) function; (void) err; (void) fmt;
+    // Shhh...
+}
+
 void
 sc_set_log_level(enum sc_log_level level) {
     SDL_LogPriority sdl_log = log_level_sc_to_sdl(level);
     SDL_LogSetPriority(SDL_LOG_CATEGORY_APPLICATION, sdl_log);
     SDL_LogSetPriority(SDL_LOG_CATEGORY_CUSTOM, sdl_log);
+    if (level < SC_LOG_LEVEL_WARN)
+        snd_lib_error_set_handler(sc_no_alsa_error);
+    else
+        snd_lib_error_set_handler(NULL);
 }
 
 enum sc_log_level

@@ -78,7 +78,7 @@ jobs:
           sudo apt install -y meson ninja-build nasm ffmpeg libsdl2-2.0-0 \
              libsdl2-dev libavcodec-dev libavdevice-dev libavformat-dev \
              libavutil-dev libswresample-dev libusb-1.0-0 libusb-1.0-0-dev \
-             libv4l-dev
+             libv4l-dev libasound2-dev
 
       - name: Test
         run: release/test_client.sh
@@ -104,7 +104,7 @@ jobs:
           sudo apt install -y meson ninja-build nasm ffmpeg libsdl2-2.0-0 \
              libsdl2-dev libavcodec-dev libavdevice-dev libavformat-dev \
              libavutil-dev libswresample-dev libusb-1.0-0 libusb-1.0-0-dev \
-             libv4l-dev
+             libv4l-dev libasound2-dev
 
       - name: Build
         run: release/build_linux.sh x86_64
