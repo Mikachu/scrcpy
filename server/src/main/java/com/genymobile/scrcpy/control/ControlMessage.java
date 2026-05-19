@@ -32,6 +32,7 @@ public final class ControlMessage {
     public static final int TYPE_LIST_APPS = 22;
     public static final int TYPE_SET_VIDEO_ENABLED = 23;
     public static final int TYPE_SET_AUDIO_ENABLED = 24;
+    public static final int TYPE_SCAN_FILE = 25;
 
     public static final long SEQUENCE_INVALID = 0;
 
@@ -216,6 +217,13 @@ public final class ControlMessage {
         ControlMessage msg = new ControlMessage();
         msg.type = TYPE_SET_AUDIO_ENABLED;
         msg.value = value;
+        return msg;
+    }
+
+    public static ControlMessage createScanFile(String path) {
+        ControlMessage msg = new ControlMessage();
+        msg.type = TYPE_SCAN_FILE;
+        msg.text = path;
         return msg;
     }
 

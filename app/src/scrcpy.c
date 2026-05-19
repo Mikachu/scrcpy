@@ -593,7 +593,7 @@ scrcpy(struct scrcpy_options *options) {
     struct sc_file_pusher *fp = NULL;
 
     if (options->video_playback && options->control) {
-        if (!sc_file_pusher_init(&s->file_pusher, serial,
+        if (!sc_file_pusher_init(&s->file_pusher, &s->controller, serial,
                                  options->push_target)) {
             goto end;
         }

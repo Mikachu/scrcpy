@@ -69,6 +69,8 @@ public class ControlMessageReader {
                 return parseSetVideoEnabled();
             case ControlMessage.TYPE_SET_AUDIO_ENABLED:
                 return parseSetAudioEnabled();
+            case ControlMessage.TYPE_SCAN_FILE:
+                return parseScanFile();
             default:
                 throw new ControlProtocolException("Unknown event type: " + type);
         }
@@ -207,6 +209,11 @@ public class ControlMessageReader {
     private ControlMessage parseSetAudioEnabled() throws IOException {
         int value = dis.readUnsignedByte();
         return ControlMessage.createSetAudioEnabled(value);
+    }
+
+    private ControlMessage parseScanFile() throws IOException {
+        String path = parseString();
+        return ControlMessage.createScanFile(path);
     }
 
     private Position parsePosition() throws IOException {
