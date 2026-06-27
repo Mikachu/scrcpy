@@ -1,0 +1,61 @@
+name: Build Server
+
+on:
+  workflow_dispatch:
+    inputs:
+      name:
+        description: 'Version name (default is ref name)'
+
+env:
+  # $VERSION is used by release scripts
+  VERSION: ${{ github.event.inputs.name || github.ref_name }}
+
+jobs:
+  build-scrcpy-server:
+    runs-on: ubuntu-latest
+    env:
+      GRADLE: gradle  # use native gradle instead of ./gradlew in scripts
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Build
+        run: release/build_server.sh
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: scrcpy-server
+          path: release/work/build-server/server/scrcpy-server
+
+  release:
+    needs:
+      - build-scrcpy-server
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Download scrcpy-server
+        uses: actions/download-artifact@v8
+        with:
+          name: scrcpy-server
+          path: release/work/build-server/server/
+
+      - name: Package server
+        run: release/package_server.sh
+
+      - name: Generate checksums
+        run: release/generate_checksums.sh
+
+      - name: Upload release artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: scrcpy-release-${{ env.VERSION }}
+          path: release/output
