@@ -41,7 +41,7 @@ public class SurfaceEncoder implements AsyncProcessor {
     private final String encoderName;
     private final List<CodecOption> codecOptions;
     private final int videoBitRate;
-    private final float maxFps;
+    private volatile float maxFps;
     private final boolean downsizeOnError;
 
     private boolean firstFrameSent;
@@ -84,6 +84,9 @@ public class SurfaceEncoder implements AsyncProcessor {
 
                 format.setInteger(MediaFormat.KEY_WIDTH, size.getWidth());
                 format.setInteger(MediaFormat.KEY_HEIGHT, size.getHeight());
+                if (maxFps > 0) {
+                    format.setFloat(KEY_MAX_FPS_TO_ENCODER, maxFps);
+                }
 
                 Surface surface = null;
                 boolean mediaCodecStarted = false;
@@ -322,5 +325,11 @@ public class SurfaceEncoder implements AsyncProcessor {
         if (thread != null) {
             thread.join();
         }
+    }
+
+    public void setMaxFps(float fps) {
+        maxFps = fps;
+        reset.reset();
+        Ln.i("Max FPS updated to: " + fps);
     }
 }

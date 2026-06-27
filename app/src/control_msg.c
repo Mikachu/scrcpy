@@ -182,6 +182,12 @@ sc_control_msg_serialize(const struct sc_control_msg *msg, uint8_t *buf) {
             size_t len = write_string_tiny(&buf[1], msg->start_app.name, 255);
             return 1 + len;
         }
+        case SC_CONTROL_MSG_TYPE_SET_MAX_FPS: {
+            uint32_t fps_bits;
+            memcpy(&fps_bits, &msg->set_max_fps.max_fps, 4);
+            sc_write32be(&buf[1], fps_bits);
+            return 5;
+        }
         case SC_CONTROL_MSG_TYPE_EXPAND_NOTIFICATION_PANEL:
         case SC_CONTROL_MSG_TYPE_EXPAND_SETTINGS_PANEL:
         case SC_CONTROL_MSG_TYPE_COLLAPSE_PANELS:
@@ -267,6 +273,9 @@ sc_control_msg_log(const struct sc_control_msg *msg) {
         case SC_CONTROL_MSG_TYPE_SET_DISPLAY_POWER:
             LOG_CMSG("display power %s",
                      msg->set_display_power.on ? "on" : "off");
+            break;
+        case SC_CONTROL_MSG_TYPE_SET_MAX_FPS:
+            LOG_CMSG("set max fps %g", (double) msg->set_max_fps.max_fps);
             break;
         case SC_CONTROL_MSG_TYPE_EXPAND_NOTIFICATION_PANEL:
             LOG_CMSG("expand notification panel");

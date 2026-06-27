@@ -41,6 +41,9 @@
 #include "util/rand.h"
 #include "util/timeout.h"
 #include "util/tick.h"
+#ifdef __linux__
+# include "terminal_controller.h"
+#endif
 #ifdef HAVE_V4L2
 # include "v4l2_sink.h"
 #endif
@@ -89,6 +92,9 @@ struct scrcpy {
 #endif
     };
     struct sc_timeout timeout;
+#ifdef __linux__
+    struct sc_terminal_controller terminal_controller;
+#endif
 };
 
 #ifdef _WIN32
@@ -416,6 +422,11 @@ scrcpy(struct scrcpy_options *options) {
     bool screen_initialized = false;
     bool timeout_initialized = false;
     bool timeout_started = false;
+
+#ifdef __linux__
+    bool terminal_controller_initialized = false;
+    bool terminal_controller_started = false;
+#endif
 
     struct sc_acksync *acksync = NULL;
 
@@ -947,9 +958,36 @@ aoa_complete:
 
     SDL_SetHintWithPriority("SDL_POLL_INTERVAL", "1000", SDL_HINT_NORMAL);
 
+#ifdef __linux__
+    {
+        struct sc_screen *tc_screen = options->window ? &s->screen : NULL;
+        struct sc_audio_player *tc_ap =
+            options->audio_playback ? &s->audio_player : NULL;
+        struct sc_controller *tc_controller =
+            options->control ? &s->controller : NULL;
+        if (sc_terminal_controller_init(&s->terminal_controller,
+                                         tc_screen, tc_ap, tc_controller)) {
+            terminal_controller_initialized = true;
+            if (sc_terminal_controller_start(&s->terminal_controller)) {
+                terminal_controller_started = true;
+            }
+        }
+    }
+#endif
+
     ret = event_loop(s, options->window);
     terminate_event_loop();
     LOGD("quit...");
+
+#ifdef __linux__
+    if (terminal_controller_started) {
+        sc_terminal_controller_stop(&s->terminal_controller);
+        sc_terminal_controller_join(&s->terminal_controller);
+    }
+    if (terminal_controller_initialized) {
+        sc_terminal_controller_destroy(&s->terminal_controller);
+    }
+#endif
 
     if (options->video_playback) {
         // Close the window immediately on closing, because screen_destroy()

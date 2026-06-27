@@ -33,6 +33,7 @@ src = [
     'src/scrcpy.c',
     'src/screen.c',
     'src/server.c',
+    'src/terminal_controller.c',
     'src/version.c',
     'src/hid/hid_gamepad.c',
     'src/hid/hid_keyboard.c',

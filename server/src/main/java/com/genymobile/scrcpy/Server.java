@@ -155,6 +155,7 @@ public final class Server {
 
                 if (controller != null) {
                     controller.setSurfaceCapture(surfaceCapture);
+                    controller.setSurfaceEncoder(surfaceEncoder);
                 }
             }
 

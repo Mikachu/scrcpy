@@ -25,6 +25,7 @@ public final class ControlMessage {
     public static final int TYPE_OPEN_HARD_KEYBOARD_SETTINGS = 15;
     public static final int TYPE_START_APP = 16;
     public static final int TYPE_RESET_VIDEO = 17;
+    public static final int TYPE_SET_MAX_FPS = 18;
 
     public static final long SEQUENCE_INVALID = 0;
 
@@ -53,6 +54,7 @@ public final class ControlMessage {
     private boolean on;
     private int vendorId;
     private int productId;
+    private float maxFps;
 
     private ControlMessage() {
     }
@@ -166,6 +168,13 @@ public final class ControlMessage {
         return msg;
     }
 
+    public static ControlMessage createSetMaxFps(float maxFps) {
+        ControlMessage msg = new ControlMessage();
+        msg.type = TYPE_SET_MAX_FPS;
+        msg.maxFps = maxFps;
+        return msg;
+    }
+
     public int getType() {
         return type;
     }
@@ -248,5 +257,9 @@ public final class ControlMessage {
 
     public int getProductId() {
         return productId;
+    }
+
+    public float getMaxFps() {
+        return maxFps;
     }
 }

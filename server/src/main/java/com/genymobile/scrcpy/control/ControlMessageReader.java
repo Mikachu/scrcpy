@@ -56,6 +56,8 @@ public class ControlMessageReader {
                 return parseUhidDestroy();
             case ControlMessage.TYPE_START_APP:
                 return parseStartApp();
+            case ControlMessage.TYPE_SET_MAX_FPS:
+                return parseSetMaxFps();
             default:
                 throw new ControlProtocolException("Unknown event type: " + type);
         }
@@ -164,6 +166,11 @@ public class ControlMessageReader {
     private ControlMessage parseStartApp() throws IOException {
         String name = parseString(1);
         return ControlMessage.createStartApp(name);
+    }
+
+    private ControlMessage parseSetMaxFps() throws IOException {
+        float maxFps = dis.readFloat();
+        return ControlMessage.createSetMaxFps(maxFps);
     }
 
     private Position parsePosition() throws IOException {

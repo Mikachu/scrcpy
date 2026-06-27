@@ -1,0 +1,162 @@
+#include "terminal_controller.h"
+
+#include <fcntl.h>
+#include <poll.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+
+#include "control_msg.h"
+#include "events.h"
+#include "util/log.h"
+
+struct pause_data {
+    struct sc_screen *screen;
+    bool paused;
+};
+
+static void
+do_set_paused(void *userdata) {
+    struct pause_data *data = userdata;
+    sc_screen_set_paused(data->screen, data->paused);
+    free(data);
+}
+
+static void
+handle_command(struct sc_terminal_controller *tc, const char *cmd) {
+    if (!strcmp(cmd, "pause") || !strcmp(cmd, "p")) {
+        if (tc->screen) {
+            struct pause_data *data = malloc(sizeof(*data));
+            if (data) {
+                data->screen = tc->screen;
+                data->paused = true;
+                if (!sc_post_to_main_thread(do_set_paused, data)) {
+                    free(data);
+                }
+            }
+        }
+    } else if (!strcmp(cmd, "unpause") || !strcmp(cmd, "u")) {
+        if (tc->screen) {
+            struct pause_data *data = malloc(sizeof(*data));
+            if (data) {
+                data->screen = tc->screen;
+                data->paused = false;
+                if (!sc_post_to_main_thread(do_set_paused, data)) {
+                    free(data);
+                }
+            }
+        }
+    } else if (!strncmp(cmd, "fps=", 4)) {
+        if (tc->controller) {
+            float fps = (float) atof(cmd + 4);
+            struct sc_control_msg msg;
+            msg.type = SC_CONTROL_MSG_TYPE_SET_MAX_FPS;
+            msg.set_max_fps.max_fps = fps;
+            if (!sc_controller_push_msg(tc->controller, &msg)) {
+                LOGW("Could not push set_max_fps message");
+            } else {
+                LOGI("Requested max fps: %g", (double) fps);
+            }
+        }
+    } else if (!strcmp(cmd, "quit") || !strcmp(cmd, "q")) {
+        sc_push_event(SDL_QUIT);
+    } else if (cmd[0] != '\0') {
+        LOGW("Unknown terminal command: %s", cmd);
+        LOGI("Commands: pause, unpause, fps=N, quit");
+    }
+}
+
+static int
+run_terminal_controller(void *data) {
+    struct sc_terminal_controller *tc = data;
+
+    int tty_fd = open("/dev/tty", O_RDONLY);
+    if (tty_fd == -1) {
+        LOGW("Could not open /dev/tty, terminal control disabled");
+        return 0;
+    }
+
+    LOGI("Terminal control ready. Commands: pause, unpause, "
+         "fps=N, quit");
+
+    char line[256];
+    int pos = 0;
+
+    struct pollfd fds[2];
+    fds[0].fd = tty_fd;
+    fds[0].events = POLLIN;
+    fds[1].fd = tc->cancel_pipe[0];
+    fds[1].events = POLLIN;
+
+    for (;;) {
+        int r = poll(fds, 2, -1);
+        if (r < 0) {
+            break;
+        }
+        if (fds[1].revents & POLLIN) {
+            break; // cancelled
+        }
+        if (!(fds[0].revents & POLLIN)) {
+            continue;
+        }
+        char c;
+        ssize_t n = read(tty_fd, &c, 1);
+        if (n <= 0) {
+            break;
+        }
+        if (c == '\n') {
+            line[pos] = '\0';
+            pos = 0;
+            handle_command(tc, line);
+        } else if (pos < (int) sizeof(line) - 1) {
+            line[pos++] = c;
+        }
+    }
+
+    close(tty_fd);
+    return 0;
+}
+
+bool
+sc_terminal_controller_init(struct sc_terminal_controller *tc,
+                             struct sc_screen *screen,
+                             struct sc_audio_player *ap,
+                             struct sc_controller *controller) {
+    tc->screen = screen;
+    tc->ap = ap;
+    tc->controller = controller;
+    tc->muted = false;
+    if (pipe(tc->cancel_pipe) == -1) {
+        LOGE("Could not create cancel pipe for terminal controller");
+        return false;
+    }
+    return true;
+}
+
+bool
+sc_terminal_controller_start(struct sc_terminal_controller *tc) {
+    bool ok = sc_thread_create(&tc->thread, run_terminal_controller,
+                               "terminal-ctrl", tc);
+    if (!ok) {
+        LOGE("Could not start terminal controller thread");
+        return false;
+    }
+    return true;
+}
+
+void
+sc_terminal_controller_stop(struct sc_terminal_controller *tc) {
+    char byte = 0;
+    (void) write(tc->cancel_pipe[1], &byte, 1);
+}
+
+void
+sc_terminal_controller_join(struct sc_terminal_controller *tc) {
+    sc_thread_join(&tc->thread, NULL);
+}
+
+void
+sc_terminal_controller_destroy(struct sc_terminal_controller *tc) {
+    close(tc->cancel_pipe[0]);
+    close(tc->cancel_pipe[1]);
+}
