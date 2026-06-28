@@ -35,6 +35,9 @@ sc_input_manager_init(struct sc_input_manager *im,
 
     im->sdl_shortcut_mods = sc_shortcut_mods_to_sdl(params->shortcut_mods);
 
+    im->on_activity = params->on_activity;
+    im->on_activity_userdata = params->on_activity_userdata;
+
     im->vfinger_down = false;
     im->vfinger_invert_x = false;
     im->vfinger_invert_y = false;
@@ -1021,6 +1024,24 @@ sc_input_manager_handle_event(struct sc_input_manager *im,
                               const SDL_Event *event) {
     bool control = im->controller;
     bool paused = im->screen->paused;
+
+    if (im->on_activity) {
+        switch (event->type) {
+            case SDL_KEYDOWN:
+            case SDL_MOUSEBUTTONDOWN:
+            //case SDL_MOUSEMOTION:
+            case SDL_MOUSEWHEEL:
+            case SDL_FINGERDOWN:
+            case SDL_FINGERMOTION:
+            case SDL_CONTROLLERBUTTONDOWN:
+            case SDL_CONTROLLERAXISMOTION:
+                im->on_activity(im->on_activity_userdata);
+                break;
+            default:
+                break;
+        }
+    }
+
     switch (event->type) {
         case SDL_TEXTINPUT:
             if (!im->kp || paused) {

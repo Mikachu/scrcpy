@@ -2362,6 +2362,64 @@ parse_mouse_bindings(const char *s, struct sc_mouse_bindings *mb) {
 }
 
 static bool
+parse_max_fps(const char *s, struct scrcpy_options *opts) {
+    opts->max_fps = s;
+
+    if (!strchr(s, ',')) {
+        // Single value: plain --max-fps N, no activity config
+        return true;
+    }
+
+    // Extended format: fps_active,timeout1_sec,fps_idle1,timeout2_sec,fps_idle2
+    int commas = 0;
+    for (const char *p = s; *p; ++p) {
+        if (*p == ',') ++commas;
+    }
+    if (commas != 4) {
+        LOGE("Invalid --max-fps: expected 'fps' or "
+             "'fps_active,timeout1,fps_idle1,timeout2,fps_idle2'");
+        return false;
+    }
+
+    const char *comma = strchr(s, ',');
+    char *active_str = strndup(s, (size_t)(comma - s));
+    opts->max_fps = active_str;
+    const char *p = comma + 1;
+
+    char *end;
+
+    long timeout1 = strtol(p, &end, 10);
+    if (end == p || *end != ',' || timeout1 <= 0) {
+        LOGE("Invalid timeout1 in --max-fps: '%s'", s);
+        return false;
+    }
+    p = end + 1;
+    float fps_idle1 = (float) strtod(p, &end);
+    if (end == p || *end != ',') {
+        LOGE("Invalid fps_idle1 in --max-fps: '%s'", s);
+        return false;
+    }
+    p = end + 1;
+    long timeout2 = strtol(p, &end, 10);
+    if (end == p || *end != ',' || timeout2 <= 0) {
+        LOGE("Invalid timeout2 in --max-fps: '%s'", s);
+        return false;
+    }
+    p = end + 1;
+    float fps_idle2 = (float) strtod(p, &end);
+    if (end == p || *end != '\0') {
+        LOGE("Invalid fps_idle2 in --max-fps: '%s'", s);
+        return false;
+    }
+
+    opts->max_fps_timeout1 = (uint32_t) timeout1;
+    opts->max_fps_idle1 = fps_idle1;
+    opts->max_fps_timeout2 = (uint32_t) timeout2;
+    opts->max_fps_idle2 = fps_idle2;
+    return true;
+}
+
+static bool
 parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                        const char *optstring, const struct option *longopts) {
     struct scrcpy_options *opts = &args->opts;
@@ -2426,7 +2484,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                      "--keyboard=uhid instead.");
                 return false;
             case OPT_MAX_FPS:
-                opts->max_fps = optarg;
+                if (!parse_max_fps(optarg, opts)) {
+                    return false;
+                }
                 break;
             case 'm':
                 if (!parse_max_size(optarg, &opts->max_size)) {

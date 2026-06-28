@@ -14,6 +14,7 @@
 # include <windows.h>
 #endif
 
+#include "activity_fps.h"
 #include "audio_player.h"
 #include "controller.h"
 #include "decoder.h"
@@ -92,6 +93,7 @@ struct scrcpy {
 #endif
     };
     struct sc_timeout timeout;
+    struct sc_activity_fps activity_fps;
 #ifdef __linux__
     struct sc_terminal_controller terminal_controller;
 #endif
@@ -422,6 +424,8 @@ scrcpy(struct scrcpy_options *options) {
     bool screen_initialized = false;
     bool timeout_initialized = false;
     bool timeout_started = false;
+    bool activity_fps_initialized = false;
+    bool activity_fps_started = false;
 
 #ifdef __linux__
     bool terminal_controller_initialized = false;
@@ -806,6 +810,20 @@ aoa_complete:
         controller_started = true;
     }
 
+    if (options->max_fps_idle1 != 0 && controller) {
+        float fps_active = options->max_fps ? (float) atof(options->max_fps) : 0;
+        bool ok = sc_activity_fps_init(&s->activity_fps, &s->controller,
+                                       fps_active,
+                                       options->max_fps_idle1,
+                                       options->max_fps_timeout1,
+                                       options->max_fps_idle2,
+                                       options->max_fps_timeout2);
+        if (!ok) {
+            goto end;
+        }
+        activity_fps_initialized = true;
+    }
+
     // There is a controller if and only if control is enabled
     assert(options->control == !!controller);
 
@@ -842,6 +860,15 @@ aoa_complete:
             goto end;
         }
         screen_initialized = true;
+
+        if (activity_fps_initialized) {
+            s->screen.im.on_activity = sc_activity_fps_notify_activity;
+            s->screen.im.on_activity_userdata = &s->activity_fps;
+            if (!sc_activity_fps_start(&s->activity_fps)) {
+                goto end;
+            }
+            activity_fps_started = true;
+        }
 
         if (options->video_playback) {
             struct sc_frame_source *src = &s->video_decoder.frame_source;
@@ -997,6 +1024,9 @@ aoa_complete:
     }
 
 end:
+    if (activity_fps_started) {
+        sc_activity_fps_stop(&s->activity_fps);
+    }
     if (timeout_started) {
         sc_timeout_stop(&s->timeout);
     }
@@ -1044,6 +1074,13 @@ end:
     }
     if (timeout_initialized) {
         sc_timeout_destroy(&s->timeout);
+    }
+
+    if (activity_fps_started) {
+        sc_activity_fps_join(&s->activity_fps);
+    }
+    if (activity_fps_initialized) {
+        sc_activity_fps_destroy(&s->activity_fps);
     }
 
     // now that the sockets are shutdown, the demuxer and controller are

@@ -263,6 +263,10 @@ struct scrcpy_options {
     uint32_t video_bit_rate;
     uint32_t audio_bit_rate;
     const char *max_fps; // float to be parsed by the server
+    float max_fps_idle1;        // 0 = disabled
+    uint32_t max_fps_timeout1;  // seconds until idle1
+    float max_fps_idle2;        // 0 = disabled
+    uint32_t max_fps_timeout2;  // seconds until idle2
     const char *angle; // float to be parsed by the server
     enum sc_orientation capture_orientation;
     enum sc_orientation_lock capture_orientation_lock;

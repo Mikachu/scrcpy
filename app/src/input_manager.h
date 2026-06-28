@@ -44,6 +44,9 @@ struct sc_input_manager {
     uint16_t last_mod;
 
     uint64_t next_sequence; // used for request acknowledgements
+
+    void (*on_activity)(void *userdata);
+    void *on_activity_userdata;
 };
 
 struct sc_input_manager_params {
@@ -58,6 +61,9 @@ struct sc_input_manager_params {
     bool legacy_paste;
     bool clipboard_autosync;
     uint8_t shortcut_mods; // OR of enum sc_shortcut_mod values
+
+    void (*on_activity)(void *userdata);
+    void *on_activity_userdata;
 };
 
 void
