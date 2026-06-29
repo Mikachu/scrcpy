@@ -58,6 +58,8 @@ public class ControlMessageReader {
                 return parseStartApp();
             case ControlMessage.TYPE_SET_MAX_FPS:
                 return parseSetMaxFps();
+            case ControlMessage.TYPE_SET_BIT_RATE:
+                return parseSetBitRate();
             default:
                 throw new ControlProtocolException("Unknown event type: " + type);
         }
@@ -171,6 +173,11 @@ public class ControlMessageReader {
     private ControlMessage parseSetMaxFps() throws IOException {
         float maxFps = dis.readFloat();
         return ControlMessage.createSetMaxFps(maxFps);
+    }
+
+    private ControlMessage parseSetBitRate() throws IOException {
+        int bitRate = dis.readInt();
+        return ControlMessage.createSetBitRate(bitRate);
     }
 
     private Position parsePosition() throws IOException {

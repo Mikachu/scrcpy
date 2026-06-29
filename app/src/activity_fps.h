@@ -18,6 +18,9 @@ struct sc_activity_fps {
     uint32_t timeout1;  // seconds until idle1
     float fps_idle2;    // 0 = disabled
     uint32_t timeout2;  // seconds until idle2
+    uint32_t bitrate_active;
+    uint32_t bitrate_idle1;
+    uint32_t bitrate_idle2;
 
     sc_thread thread;
     sc_mutex mutex;
@@ -31,6 +34,7 @@ bool
 sc_activity_fps_init(struct sc_activity_fps *af,
                      struct sc_controller *controller,
                      float fps_active,
+                     uint32_t bitrate_active,
                      float fps_idle1, uint32_t timeout1,
                      float fps_idle2, uint32_t timeout2);
 

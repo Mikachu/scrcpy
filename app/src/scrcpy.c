@@ -814,6 +814,7 @@ aoa_complete:
         float fps_active = options->max_fps ? (float) atof(options->max_fps) : 0;
         bool ok = sc_activity_fps_init(&s->activity_fps, &s->controller,
                                        fps_active,
+                                       options->video_bit_rate,
                                        options->max_fps_idle1,
                                        options->max_fps_timeout1,
                                        options->max_fps_idle2,

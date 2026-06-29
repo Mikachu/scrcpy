@@ -26,6 +26,7 @@ public final class ControlMessage {
     public static final int TYPE_START_APP = 16;
     public static final int TYPE_RESET_VIDEO = 17;
     public static final int TYPE_SET_MAX_FPS = 18;
+    public static final int TYPE_SET_BIT_RATE = 19;
 
     public static final long SEQUENCE_INVALID = 0;
 
@@ -55,6 +56,7 @@ public final class ControlMessage {
     private int vendorId;
     private int productId;
     private float maxFps;
+    private int bitRate;
 
     private ControlMessage() {
     }
@@ -175,6 +177,13 @@ public final class ControlMessage {
         return msg;
     }
 
+    public static ControlMessage createSetBitRate(int bitRate) {
+        ControlMessage msg = new ControlMessage();
+        msg.type = TYPE_SET_BIT_RATE;
+        msg.bitRate = bitRate;
+        return msg;
+    }
+
     public int getType() {
         return type;
     }
@@ -261,5 +270,9 @@ public final class ControlMessage {
 
     public float getMaxFps() {
         return maxFps;
+    }
+
+    public int getBitRate() {
+        return bitRate;
     }
 }

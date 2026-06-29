@@ -9,6 +9,7 @@
 #include "control_msg.h"
 #include "events.h"
 #include "util/log.h"
+#include "util/str.h"
 
 struct pause_data {
     struct sc_screen *screen;
@@ -46,7 +47,7 @@ handle_command(struct sc_terminal_controller *tc, const char *cmd) {
                 }
             }
         }
-    } else if (!strncmp(cmd, "fps=", 4)) {
+    } else if (!strncmp(cmd, "fps ", 4)) {
         if (tc->controller) {
             float fps = (float) atof(cmd + 4);
             struct sc_control_msg msg;
@@ -57,12 +58,37 @@ handle_command(struct sc_terminal_controller *tc, const char *cmd) {
             } else {
                 LOGI("Requested max fps: %g", (double) fps);
             }
+            msg.type = SC_CONTROL_MSG_TYPE_RESET_VIDEO;
+            if (!sc_controller_push_msg(tc->controller, &msg)) {
+                LOGW("Could not push reset_video message");
+            }
+        }
+    } else if (!strncmp(cmd, "bitrate ", 8)) {
+        if (tc->controller) {
+            long bitrate;
+            if (!sc_str_parse_integer_with_suffix(cmd + 8, &bitrate)
+                    || bitrate <= 0) {
+                LOGW("Invalid bitrate: %s", cmd + 8);
+            } else {
+                struct sc_control_msg msg;
+                msg.type = SC_CONTROL_MSG_TYPE_SET_BIT_RATE;
+                msg.set_bit_rate.bit_rate = (uint32_t) bitrate;
+                if (!sc_controller_push_msg(tc->controller, &msg)) {
+                    LOGW("Could not push set_bit_rate message");
+                } else {
+                    LOGI("Requested bit rate: %ld", bitrate);
+                }
+                msg.type = SC_CONTROL_MSG_TYPE_RESET_VIDEO;
+                if (!sc_controller_push_msg(tc->controller, &msg)) {
+                    LOGW("Could not push reset_video message");
+                }
+            }
         }
     } else if (!strcmp(cmd, "quit") || !strcmp(cmd, "q")) {
         sc_push_event(SDL_QUIT);
     } else if (cmd[0] != '\0') {
         LOGW("Unknown terminal command: %s", cmd);
-        LOGI("Commands: pause, unpause, fps=N, quit");
+        LOGI("Commands: pause, unpause, fps N, bitrate B, quit");
     }
 }
 
@@ -77,7 +103,7 @@ run_terminal_controller(void *data) {
     }
 
     LOGI("Terminal control ready. Commands: pause, unpause, "
-         "fps=N, quit");
+         "fps N, bitrate B, quit");
 
     char line[256];
     int pos = 0;
@@ -147,7 +173,9 @@ sc_terminal_controller_start(struct sc_terminal_controller *tc) {
 void
 sc_terminal_controller_stop(struct sc_terminal_controller *tc) {
     char byte = 0;
-    (void) write(tc->cancel_pipe[1], &byte, 1);
+    if (write(tc->cancel_pipe[1], &byte, 1) < 0) {
+        // goodbye
+    }
 }
 
 void

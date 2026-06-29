@@ -44,6 +44,7 @@ enum sc_control_msg_type {
     SC_CONTROL_MSG_TYPE_START_APP,
     SC_CONTROL_MSG_TYPE_RESET_VIDEO,
     SC_CONTROL_MSG_TYPE_SET_MAX_FPS,
+    SC_CONTROL_MSG_TYPE_SET_BIT_RATE,
 };
 
 enum sc_copy_key {
@@ -115,6 +116,9 @@ struct sc_control_msg {
         struct {
             float max_fps;
         } set_max_fps;
+        struct {
+            uint32_t bit_rate;
+        } set_bit_rate;
     };
 };
 

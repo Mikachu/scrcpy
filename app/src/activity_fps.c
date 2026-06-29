@@ -4,14 +4,30 @@
 #include "util/log.h"
 
 static void
-send_fps(struct sc_controller *controller, float fps) {
+send_fps(struct sc_controller *controller, float fps, uint32_t bitrate) {
     struct sc_control_msg msg;
+
+    if (bitrate != 0) {
+        msg.type = SC_CONTROL_MSG_TYPE_SET_BIT_RATE;
+        msg.set_bit_rate.bit_rate = bitrate;
+        if (!sc_controller_push_msg(controller, &msg)) {
+            LOGW("Could not push set_bit_rate message");
+        } else {
+            LOGV("Activity FPS: set bit rate to %" PRIu32, bitrate);
+        }
+    }
+
     msg.type = SC_CONTROL_MSG_TYPE_SET_MAX_FPS;
     msg.set_max_fps.max_fps = fps;
     if (!sc_controller_push_msg(controller, &msg)) {
         LOGW("Could not push set_max_fps message");
     } else {
-        LOGI("Activity FPS: set max fps to %g", (double) fps);
+        LOGV("Activity FPS: set max fps to %g", (double) fps);
+    }
+
+    msg.type = SC_CONTROL_MSG_TYPE_RESET_VIDEO;
+    if (!sc_controller_push_msg(controller, &msg)) {
+        LOGW("Could not push reset_video message");
     }
 }
 
@@ -35,7 +51,7 @@ run_activity_fps(void *data) {
 
         if (timed_out) {
             if (af->state == 0) {
-                send_fps(af->controller, af->fps_idle1);
+                send_fps(af->controller, af->fps_idle1, af->bitrate_idle1);
                 af->state = 1;
                 if (af->fps_idle2 != 0) {
                     af->deadline = sc_tick_now()
@@ -44,7 +60,7 @@ run_activity_fps(void *data) {
                     af->state = 2;
                 }
             } else if (af->state == 1) {
-                send_fps(af->controller, af->fps_idle2);
+                send_fps(af->controller, af->fps_idle2, af->bitrate_idle2);
                 af->state = 2;
             }
         }
@@ -60,16 +76,21 @@ bool
 sc_activity_fps_init(struct sc_activity_fps *af,
                      struct sc_controller *controller,
                      float fps_active,
+                     uint32_t bitrate_active,
                      float fps_idle1, uint32_t timeout1,
                      float fps_idle2, uint32_t timeout2) {
     af->controller = controller;
     af->fps_active = fps_active;
+    af->bitrate_active = bitrate_active;
     af->fps_idle1 = fps_idle1;
     af->timeout1 = timeout1;
     af->fps_idle2 = fps_idle2;
     af->timeout2 = timeout2;
     af->state = 0;
     af->stopped = false;
+
+    af->bitrate_idle1 = (uint32_t)(bitrate_active * fps_idle1 / (fps_active ?: 1));
+    af->bitrate_idle2 = (uint32_t)(bitrate_active * fps_idle2 / (fps_active ?: 1));
 
     bool ok = sc_mutex_init(&af->mutex);
     if (!ok) {
@@ -106,7 +127,7 @@ sc_activity_fps_notify_activity(void *userdata) {
         // We've previously reduced fps; restore active fps.
         // send_fps acquires controller->mutex; that's fine because
         // controller never acquires af->mutex (no circular dependency).
-        send_fps(af->controller, af->fps_active);
+        send_fps(af->controller, af->fps_active, af->bitrate_active);
         af->state = 0;
     }
     af->deadline = sc_tick_now() + SC_TICK_FROM_SEC(af->timeout1);

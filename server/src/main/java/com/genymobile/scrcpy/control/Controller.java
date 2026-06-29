@@ -339,7 +339,10 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
                 break;
             case ControlMessage.TYPE_SET_MAX_FPS:
                 setMaxFps(msg.getMaxFps());
-                return true;
+                break;
+            case ControlMessage.TYPE_SET_BIT_RATE:
+                setBitRate(msg.getBitRate());
+                break;
             default:
                 // do nothing
         }
@@ -768,6 +771,13 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
         if (surfaceEncoder != null) {
             Ln.i("Setting max FPS to: " + fps);
             surfaceEncoder.setMaxFps(fps);
+        }
+    }
+
+    private void setBitRate(int bitRate) {
+        if (surfaceEncoder != null) {
+            Ln.i("Setting bit rate to: " + bitRate);
+            surfaceEncoder.setBitRate(bitRate);
         }
     }
 }
