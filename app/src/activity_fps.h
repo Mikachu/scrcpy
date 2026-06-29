@@ -10,14 +10,19 @@
 #include "util/thread.h"
 #include "util/tick.h"
 
+struct sc_activity_fps_config {
+    float fps_active;
+    float fps_idle1;   // 0 = disabled
+    uint32_t timeout1; // seconds until idle1
+    float fps_idle2;   // 0 = disabled
+    uint32_t timeout2; // seconds until idle2
+};
+
 struct sc_activity_fps {
     struct sc_controller *controller;
 
-    float fps_active;
-    float fps_idle1;
-    uint32_t timeout1;  // seconds until idle1
-    float fps_idle2;    // 0 = disabled
-    uint32_t timeout2;  // seconds until idle2
+    struct sc_activity_fps_config config;
+
     uint32_t bitrate_active;
     uint32_t bitrate_idle1;
     uint32_t bitrate_idle2;
@@ -30,13 +35,22 @@ struct sc_activity_fps {
     bool stopped;
 };
 
+// Parse "fps_active,timeout1,fps_idle1,timeout2,fps_idle2" or plain "fps".
+// On success, fills *config and returns true.
+bool
+sc_activity_fps_parse_config(const char *s,
+                             struct sc_activity_fps_config *config);
+
 bool
 sc_activity_fps_init(struct sc_activity_fps *af,
                      struct sc_controller *controller,
-                     float fps_active,
-                     uint32_t bitrate_active,
-                     float fps_idle1, uint32_t timeout1,
-                     float fps_idle2, uint32_t timeout2);
+                     const struct sc_activity_fps_config *config,
+                     uint32_t bitrate_active);
+
+// Thread-safe; reconfigure at runtime (e.g. from terminal controller)
+void
+sc_activity_fps_reconfigure(struct sc_activity_fps *af,
+                             const struct sc_activity_fps_config *config);
 
 bool
 sc_activity_fps_start(struct sc_activity_fps *af);

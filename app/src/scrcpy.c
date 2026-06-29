@@ -810,15 +810,10 @@ aoa_complete:
         controller_started = true;
     }
 
-    if (options->max_fps_idle1 != 0 && controller) {
-        float fps_active = options->max_fps ? (float) atof(options->max_fps) : 0;
+    if (options->activity_fps_config.fps_idle1 != 0 && controller) {
         bool ok = sc_activity_fps_init(&s->activity_fps, &s->controller,
-                                       fps_active,
-                                       options->video_bit_rate,
-                                       options->max_fps_idle1,
-                                       options->max_fps_timeout1,
-                                       options->max_fps_idle2,
-                                       options->max_fps_timeout2);
+                                       &options->activity_fps_config,
+                                       options->video_bit_rate);
         if (!ok) {
             goto end;
         }
@@ -994,7 +989,8 @@ aoa_complete:
         struct sc_controller *tc_controller =
             options->control ? &s->controller : NULL;
         if (sc_terminal_controller_init(&s->terminal_controller,
-                                         tc_screen, tc_ap, tc_controller)) {
+                                         tc_screen, tc_ap, tc_controller,
+                                         activity_fps_initialized ? &s->activity_fps : NULL)) {
             terminal_controller_initialized = true;
             if (sc_terminal_controller_start(&s->terminal_controller)) {
                 terminal_controller_started = true;

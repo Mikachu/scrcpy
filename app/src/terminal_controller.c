@@ -84,11 +84,25 @@ handle_command(struct sc_terminal_controller *tc, const char *cmd) {
                 }
             }
         }
+    } else if (!strncmp(cmd, "afps ", 5)) {
+        if (tc->activity_fps) {
+            struct sc_activity_fps_config config;
+            if (!sc_activity_fps_parse_config(cmd + 5, &config)
+                    || config.fps_idle1 == 0) {
+                LOGW("Invalid afps config: %s", cmd + 5);
+                LOGI("Usage: afps fps_active,timeout1,fps_idle1,timeout2,fps_idle2");
+            } else {
+                sc_activity_fps_reconfigure(tc->activity_fps, &config);
+                LOGI("Activity FPS reconfigured");
+            }
+        } else {
+            LOGW("Activity FPS not configured (use --max-fps with extended syntax)");
+        }
     } else if (!strcmp(cmd, "quit") || !strcmp(cmd, "q")) {
         sc_push_event(SDL_QUIT);
     } else if (cmd[0] != '\0') {
         LOGW("Unknown terminal command: %s", cmd);
-        LOGI("Commands: pause, unpause, fps N, bitrate B, quit");
+        LOGI("Commands: pause, unpause, fps N, bitrate B, afps [...], quit");
     }
 }
 
@@ -103,7 +117,7 @@ run_terminal_controller(void *data) {
     }
 
     LOGI("Terminal control ready. Commands: pause, unpause, "
-         "fps N, bitrate B, quit");
+         "fps N, bitrate B, afps [...], quit");
 
     char line[256];
     int pos = 0;
@@ -147,10 +161,12 @@ bool
 sc_terminal_controller_init(struct sc_terminal_controller *tc,
                              struct sc_screen *screen,
                              struct sc_audio_player *ap,
-                             struct sc_controller *controller) {
+                             struct sc_controller *controller,
+                             struct sc_activity_fps *activity_fps) {
     tc->screen = screen;
     tc->ap = ap;
     tc->controller = controller;
+    tc->activity_fps = activity_fps;
     tc->muted = false;
     if (pipe(tc->cancel_pipe) == -1) {
         LOGE("Could not create cancel pipe for terminal controller");

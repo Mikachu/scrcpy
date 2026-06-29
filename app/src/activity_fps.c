@@ -3,6 +3,76 @@
 #include "control_msg.h"
 #include "util/log.h"
 
+#include <stdlib.h>
+
+bool
+sc_activity_fps_parse_config(const char *s,
+                             struct sc_activity_fps_config *config) {
+    char *end;
+    float fps_active = (float) strtod(s, &end);
+    if (end == s) {
+        LOGE("Invalid fps in activity fps config: '%s'", s);
+        return false;
+    }
+
+    if (*end == '\0') {
+        config->fps_active = fps_active;
+        config->fps_idle1 = 0;
+        config->timeout1 = 0;
+        config->fps_idle2 = 0;
+        config->timeout2 = 0;
+        return true;
+    }
+
+    if (*end != ',') {
+        LOGE("Invalid activity fps config: '%s'", s);
+        return false;
+    }
+
+    int commas = 0;
+    for (const char *p = s; *p; ++p) {
+        if (*p == ',') ++commas;
+    }
+    if (commas != 4) {
+        LOGE("Invalid activity fps config: expected "
+             "'fps_active,timeout1,fps_idle1,timeout2,fps_idle2'");
+        return false;
+    }
+
+    const char *p = end + 1;
+
+    long timeout1 = strtol(p, &end, 10);
+    if (end == p || *end != ',' || timeout1 <= 0) {
+        LOGE("Invalid timeout1 in activity fps config: '%s'", s);
+        return false;
+    }
+    p = end + 1;
+    float fps_idle1 = (float) strtod(p, &end);
+    if (end == p || *end != ',') {
+        LOGE("Invalid fps_idle1 in activity fps config: '%s'", s);
+        return false;
+    }
+    p = end + 1;
+    long timeout2 = strtol(p, &end, 10);
+    if (end == p || *end != ',' || timeout2 <= 0) {
+        LOGE("Invalid timeout2 in activity fps config: '%s'", s);
+        return false;
+    }
+    p = end + 1;
+    float fps_idle2 = (float) strtod(p, &end);
+    if (end == p || *end != '\0') {
+        LOGE("Invalid fps_idle2 in activity fps config: '%s'", s);
+        return false;
+    }
+
+    config->fps_active = fps_active;
+    config->timeout1 = (uint32_t) timeout1;
+    config->fps_idle1 = fps_idle1;
+    config->timeout2 = (uint32_t) timeout2;
+    config->fps_idle2 = fps_idle2;
+    return true;
+}
+
 static void
 send_fps(struct sc_controller *controller, float fps, uint32_t bitrate) {
     struct sc_control_msg msg;
@@ -51,16 +121,16 @@ run_activity_fps(void *data) {
 
         if (timed_out) {
             if (af->state == 0) {
-                send_fps(af->controller, af->fps_idle1, af->bitrate_idle1);
+                send_fps(af->controller, af->config.fps_idle1, af->bitrate_idle1);
                 af->state = 1;
-                if (af->fps_idle2 != 0) {
+                if (af->config.fps_idle2 != 0) {
                     af->deadline = sc_tick_now()
-                                 + SC_TICK_FROM_SEC(af->timeout2);
+                                 + SC_TICK_FROM_SEC(af->config.timeout2);
                 } else {
                     af->state = 2;
                 }
             } else if (af->state == 1) {
-                send_fps(af->controller, af->fps_idle2, af->bitrate_idle2);
+                send_fps(af->controller, af->config.fps_idle2, af->bitrate_idle2);
                 af->state = 2;
             }
         }
@@ -72,25 +142,27 @@ run_activity_fps(void *data) {
     return 0;
 }
 
+static void
+apply_config(struct sc_activity_fps *af,
+               const struct sc_activity_fps_config *config) {
+    af->config = *config;
+    af->bitrate_idle1 = (uint32_t)(af->bitrate_active * af->config.fps_idle1 /
+                                   (af->config.fps_active ?: 1));
+    af->bitrate_idle2 = (uint32_t)(af->bitrate_active * af->config.fps_idle2 /
+                                   (af->config.fps_active ?: 1));
+}
+
 bool
 sc_activity_fps_init(struct sc_activity_fps *af,
                      struct sc_controller *controller,
-                     float fps_active,
-                     uint32_t bitrate_active,
-                     float fps_idle1, uint32_t timeout1,
-                     float fps_idle2, uint32_t timeout2) {
+                     const struct sc_activity_fps_config *config,
+                     uint32_t bitrate_active) {
     af->controller = controller;
-    af->fps_active = fps_active;
     af->bitrate_active = bitrate_active;
-    af->fps_idle1 = fps_idle1;
-    af->timeout1 = timeout1;
-    af->fps_idle2 = fps_idle2;
-    af->timeout2 = timeout2;
     af->state = 0;
     af->stopped = false;
 
-    af->bitrate_idle1 = (uint32_t)(bitrate_active * fps_idle1 / (fps_active ?: 1));
-    af->bitrate_idle2 = (uint32_t)(bitrate_active * fps_idle2 / (fps_active ?: 1));
+    apply_config(af, config);
 
     bool ok = sc_mutex_init(&af->mutex);
     if (!ok) {
@@ -108,7 +180,7 @@ sc_activity_fps_init(struct sc_activity_fps *af,
 
 bool
 sc_activity_fps_start(struct sc_activity_fps *af) {
-    af->deadline = sc_tick_now() + SC_TICK_FROM_SEC(af->timeout1);
+    af->deadline = sc_tick_now() + SC_TICK_FROM_SEC(af->config.timeout1);
     bool ok = sc_thread_create(&af->thread, run_activity_fps,
                                "scrcpy-afps", af);
     if (!ok) {
@@ -125,12 +197,22 @@ sc_activity_fps_notify_activity(void *userdata) {
     sc_mutex_lock(&af->mutex);
     if (af->state > 0) {
         // We've previously reduced fps; restore active fps.
-        // send_fps acquires controller->mutex; that's fine because
-        // controller never acquires af->mutex (no circular dependency).
-        send_fps(af->controller, af->fps_active, af->bitrate_active);
+        send_fps(af->controller, af->config.fps_active, af->bitrate_active);
         af->state = 0;
     }
-    af->deadline = sc_tick_now() + SC_TICK_FROM_SEC(af->timeout1);
+    af->deadline = sc_tick_now() + SC_TICK_FROM_SEC(af->config.timeout1);
+    sc_cond_signal(&af->cond);
+    sc_mutex_unlock(&af->mutex);
+}
+
+void
+sc_activity_fps_reconfigure(struct sc_activity_fps *af,
+                             const struct sc_activity_fps_config *config) {
+    sc_mutex_lock(&af->mutex);
+    apply_config(af, config);
+    af->state = 0;
+    send_fps(af->controller, af->config.fps_active, af->bitrate_active);
+    af->deadline = sc_tick_now() + SC_TICK_FROM_SEC(af->config.timeout1);
     sc_cond_signal(&af->cond);
     sc_mutex_unlock(&af->mutex);
 }

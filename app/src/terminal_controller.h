@@ -14,6 +14,7 @@ struct sc_terminal_controller {
     struct sc_screen *screen;       // NULL if no window
     struct sc_audio_player *ap;     // NULL if no audio playback
     struct sc_controller *controller; // NULL if no control
+    struct sc_activity_fps *activity_fps; // NULL if not configured
 
     sc_thread thread;
     int cancel_pipe[2]; // [0]=read end, [1]=write end
@@ -24,7 +25,8 @@ bool
 sc_terminal_controller_init(struct sc_terminal_controller *tc,
                              struct sc_screen *screen,
                              struct sc_audio_player *ap,
-                             struct sc_controller *controller);
+                             struct sc_controller *controller,
+                             struct sc_activity_fps *activity_fps);
 
 bool
 sc_terminal_controller_start(struct sc_terminal_controller *tc);
