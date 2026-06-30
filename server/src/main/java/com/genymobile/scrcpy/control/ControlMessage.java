@@ -27,6 +27,7 @@ public final class ControlMessage {
     public static final int TYPE_RESET_VIDEO = 17;
     public static final int TYPE_SET_MAX_FPS = 18;
     public static final int TYPE_SET_BIT_RATE = 19;
+    public static final int TYPE_SET_LOG_LEVEL = 20;
 
     public static final long SEQUENCE_INVALID = 0;
 
@@ -57,6 +58,7 @@ public final class ControlMessage {
     private int productId;
     private float maxFps;
     private int bitRate;
+    private int logLevel;
 
     private ControlMessage() {
     }
@@ -184,6 +186,13 @@ public final class ControlMessage {
         return msg;
     }
 
+    public static ControlMessage createSetLogLevel(int logLevel) {
+        ControlMessage msg = new ControlMessage();
+        msg.type = TYPE_SET_LOG_LEVEL;
+        msg.logLevel = logLevel;
+        return msg;
+    }
+
     public int getType() {
         return type;
     }
@@ -274,5 +283,9 @@ public final class ControlMessage {
 
     public int getBitRate() {
         return bitRate;
+    }
+    
+    public int getLogLevel() {
+        return logLevel;
     }
 }

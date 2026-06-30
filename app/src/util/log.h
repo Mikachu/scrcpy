@@ -25,6 +25,9 @@ sc_set_log_level(enum sc_log_level level);
 enum sc_log_level
 sc_get_log_level(void);
 
+enum sc_log_level
+sc_parse_log_level(const char *s);
+
 void
 sc_log(enum sc_log_level level, const char *fmt, ...);
 #define LOG(LEVEL, ...) sc_log((LEVEL), __VA_ARGS__)

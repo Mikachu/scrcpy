@@ -343,6 +343,14 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
             case ControlMessage.TYPE_SET_BIT_RATE:
                 setBitRate(msg.getBitRate());
                 break;
+            case ControlMessage.TYPE_SET_LOG_LEVEL:
+                Ln.Level[] levels = Ln.Level.values();
+                int levelOrdinal = msg.getLogLevel();
+                if (levelOrdinal >= 0 && levelOrdinal < levels.length) {
+                    Ln.initLogLevel(levels[levelOrdinal]);
+                    Ln.i("Log level set to: " + levels[levelOrdinal]);
+                }
+                break;
             default:
                 // do nothing
         }

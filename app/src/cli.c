@@ -1809,37 +1809,6 @@ parse_display_id(const char *s, uint32_t *display_id) {
     return true;
 }
 
-static bool
-parse_log_level(const char *s, enum sc_log_level *log_level) {
-    if (!strcmp(s, "verbose")) {
-        *log_level = SC_LOG_LEVEL_VERBOSE;
-        return true;
-    }
-
-    if (!strcmp(s, "debug")) {
-        *log_level = SC_LOG_LEVEL_DEBUG;
-        return true;
-    }
-
-    if (!strcmp(s, "info")) {
-        *log_level = SC_LOG_LEVEL_INFO;
-        return true;
-    }
-
-    if (!strcmp(s, "warn")) {
-        *log_level = SC_LOG_LEVEL_WARN;
-        return true;
-    }
-
-    if (!strcmp(s, "error")) {
-        *log_level = SC_LOG_LEVEL_ERROR;
-        return true;
-    }
-
-    LOGE("Could not parse log level: %s", s);
-    return false;
-}
-
 static enum sc_shortcut_mod
 parse_shortcut_mods_item(const char *item, size_t len) {
 #define STREQ(literal, s, len) \
@@ -2539,7 +2508,7 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 args->version = true;
                 break;
             case 'V':
-                if (!parse_log_level(optarg, &opts->log_level)) {
+                if ((opts->log_level = sc_parse_log_level(optarg)) < 0) {
                     return false;
                 }
                 sc_set_log_level(opts->log_level);

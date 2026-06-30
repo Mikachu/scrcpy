@@ -45,6 +45,7 @@ enum sc_control_msg_type {
     SC_CONTROL_MSG_TYPE_RESET_VIDEO,
     SC_CONTROL_MSG_TYPE_SET_MAX_FPS,
     SC_CONTROL_MSG_TYPE_SET_BIT_RATE,
+    SC_CONTROL_MSG_TYPE_SET_LOG_LEVEL,
 };
 
 enum sc_copy_key {
@@ -119,6 +120,9 @@ struct sc_control_msg {
         struct {
             uint32_t bit_rate;
         } set_bit_rate;
+        struct {
+            uint8_t level;
+        } set_log_level;
     };
 };
 

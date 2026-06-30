@@ -25,6 +25,7 @@ do_set_paused(void *userdata) {
 
 static void
 handle_command(struct sc_terminal_controller *tc, const char *cmd) {
+    int offset;
     if (!strcmp(cmd, "pause") || !strcmp(cmd, "p")) {
         if (tc->screen) {
             struct pause_data *data = malloc(sizeof(*data));
@@ -47,28 +48,28 @@ handle_command(struct sc_terminal_controller *tc, const char *cmd) {
                 }
             }
         }
-    } else if (!strncmp(cmd, "fps ", 4)) {
+    } else if (!strncmp(cmd, "fps ", offset = 4)) {
         if (tc->controller) {
-            float fps = (float) atof(cmd + 4);
+            float fps = (float) atof(cmd + offset);
             struct sc_control_msg msg;
             msg.type = SC_CONTROL_MSG_TYPE_SET_MAX_FPS;
             msg.set_max_fps.max_fps = fps;
             if (!sc_controller_push_msg(tc->controller, &msg)) {
                 LOGW("Could not push set_max_fps message");
             } else {
-                LOGI("Requested max fps: %g", (double) fps);
+                LOGV("Requested max fps: %g", (double) fps);
             }
             msg.type = SC_CONTROL_MSG_TYPE_RESET_VIDEO;
             if (!sc_controller_push_msg(tc->controller, &msg)) {
                 LOGW("Could not push reset_video message");
             }
         }
-    } else if (!strncmp(cmd, "bitrate ", 8)) {
+    } else if (!strncmp(cmd, "bitrate ", offset = 8)) {
         if (tc->controller) {
             long bitrate;
-            if (!sc_str_parse_integer_with_suffix(cmd + 8, &bitrate)
+            if (!sc_str_parse_integer_with_suffix(cmd + offset, &bitrate)
                     || bitrate <= 0) {
-                LOGW("Invalid bitrate: %s", cmd + 8);
+                LOGW("Invalid bitrate: %s", cmd + offset);
             } else {
                 struct sc_control_msg msg;
                 msg.type = SC_CONTROL_MSG_TYPE_SET_BIT_RATE;
@@ -76,7 +77,7 @@ handle_command(struct sc_terminal_controller *tc, const char *cmd) {
                 if (!sc_controller_push_msg(tc->controller, &msg)) {
                     LOGW("Could not push set_bit_rate message");
                 } else {
-                    LOGI("Requested bit rate: %ld", bitrate);
+                    LOGV("Requested bit rate: %ld", bitrate);
                 }
                 msg.type = SC_CONTROL_MSG_TYPE_RESET_VIDEO;
                 if (!sc_controller_push_msg(tc->controller, &msg)) {
@@ -84,12 +85,12 @@ handle_command(struct sc_terminal_controller *tc, const char *cmd) {
                 }
             }
         }
-    } else if (!strncmp(cmd, "afps ", 5)) {
+    } else if (!strncmp(cmd, "afps ", offset = 5)) {
         if (tc->activity_fps) {
             struct sc_activity_fps_config config;
-            if (!sc_activity_fps_parse_config(cmd + 5, &config)
+            if (!sc_activity_fps_parse_config(cmd + offset, &config)
                     || config.fps_idle1 == 0) {
-                LOGW("Invalid afps config: %s", cmd + 5);
+                LOGW("Invalid afps config: %s", cmd + offset);
                 LOGI("Usage: afps fps_active,timeout1,fps_idle1,timeout2,fps_idle2");
             } else {
                 sc_activity_fps_reconfigure(tc->activity_fps, &config);
@@ -97,6 +98,23 @@ handle_command(struct sc_terminal_controller *tc, const char *cmd) {
             }
         } else {
             LOGW("Activity FPS not configured (use --max-fps with extended syntax)");
+        }
+    } else if (!strncmp(cmd, "loglevel ", offset = 9) || !strncmp(cmd, "v ", offset = 2)) {
+        enum sc_log_level level;
+        if ((level = sc_parse_log_level(cmd + offset)) < 0) {
+            LOGW("Invalid log level: %s", cmd + offset);
+            LOGI("Valid levels: verbose, debug, info, warn, error");
+        } else {
+            sc_set_log_level(level);
+            LOGV("Client log level set to: %s", cmd + offset);
+            if (tc->controller) {
+                struct sc_control_msg msg;
+                msg.type = SC_CONTROL_MSG_TYPE_SET_LOG_LEVEL;
+                msg.set_log_level.level = (uint8_t) level;
+                if (!sc_controller_push_msg(tc->controller, &msg)) {
+                    LOGW("Could not push set_log_level message");
+                }
+            }
         }
     } else if (!strcmp(cmd, "quit") || !strcmp(cmd, "q")) {
         sc_push_event(SDL_QUIT);
@@ -116,8 +134,7 @@ run_terminal_controller(void *data) {
         return 0;
     }
 
-    LOGI("Terminal control ready. Commands: pause, unpause, "
-         "fps N, bitrate B, afps [...], quit");
+    LOGV("Terminal control ready.");
 
     char line[256];
     int pos = 0;

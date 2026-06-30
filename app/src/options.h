@@ -16,6 +16,7 @@ enum sc_log_level {
     SC_LOG_LEVEL_INFO,
     SC_LOG_LEVEL_WARN,
     SC_LOG_LEVEL_ERROR,
+    SC_LOG_LEVEL_INVALID = -1,
 };
 
 enum sc_record_format {

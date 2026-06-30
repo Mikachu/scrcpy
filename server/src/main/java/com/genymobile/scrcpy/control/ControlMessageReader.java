@@ -60,6 +60,8 @@ public class ControlMessageReader {
                 return parseSetMaxFps();
             case ControlMessage.TYPE_SET_BIT_RATE:
                 return parseSetBitRate();
+            case ControlMessage.TYPE_SET_LOG_LEVEL:
+                return parseSetLogLevel();
             default:
                 throw new ControlProtocolException("Unknown event type: " + type);
         }
@@ -178,6 +180,11 @@ public class ControlMessageReader {
     private ControlMessage parseSetBitRate() throws IOException {
         int bitRate = dis.readInt();
         return ControlMessage.createSetBitRate(bitRate);
+    }
+
+    private ControlMessage parseSetLogLevel() throws IOException {
+        int logLevel = dis.readUnsignedByte();
+        return ControlMessage.createSetLogLevel(logLevel);
     }
 
     private Position parsePosition() throws IOException {

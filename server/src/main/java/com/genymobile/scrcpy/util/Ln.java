@@ -23,7 +23,7 @@ public final class Ln {
         VERBOSE, DEBUG, INFO, WARN, ERROR
     }
 
-    private static Level threshold = Level.INFO;
+    private static volatile Level threshold = Level.INFO;
 
     private Ln() {
         // not instantiable

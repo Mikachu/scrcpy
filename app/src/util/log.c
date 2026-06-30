@@ -70,6 +70,30 @@ sc_get_log_level(void) {
     return log_level_sdl_to_sc(sdl_log);
 }
 
+enum sc_log_level
+sc_parse_log_level(const char *s) {
+    if (!strcmp(s, "verbose")) {
+        return SC_LOG_LEVEL_VERBOSE;
+    }
+
+    if (!strcmp(s, "debug")) {
+        return SC_LOG_LEVEL_DEBUG;
+    }
+
+    if (!strcmp(s, "info")) {
+        return SC_LOG_LEVEL_INFO;
+    }
+
+    if (!strcmp(s, "warn")) {
+        return SC_LOG_LEVEL_WARN;
+    }
+
+    if (!strcmp(s, "error")) {
+        return SC_LOG_LEVEL_ERROR;
+    }
+    return SC_LOG_LEVEL_INVALID;
+}
+
 void
 sc_log(enum sc_log_level level, const char *fmt, ...) {
     SDL_LogPriority sdl_level = log_level_sc_to_sdl(level);

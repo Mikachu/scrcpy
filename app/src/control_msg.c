@@ -191,6 +191,9 @@ sc_control_msg_serialize(const struct sc_control_msg *msg, uint8_t *buf) {
         case SC_CONTROL_MSG_TYPE_SET_BIT_RATE:
             sc_write32be(&buf[1], msg->set_bit_rate.bit_rate);
             return 5;
+        case SC_CONTROL_MSG_TYPE_SET_LOG_LEVEL:
+            buf[1] = msg->set_log_level.level;
+            return 2;
         case SC_CONTROL_MSG_TYPE_EXPAND_NOTIFICATION_PANEL:
         case SC_CONTROL_MSG_TYPE_EXPAND_SETTINGS_PANEL:
         case SC_CONTROL_MSG_TYPE_COLLAPSE_PANELS:
@@ -332,6 +335,9 @@ sc_control_msg_log(const struct sc_control_msg *msg) {
             break;
         case SC_CONTROL_MSG_TYPE_RESET_VIDEO:
             LOG_CMSG("reset video");
+            break;
+        case SC_CONTROL_MSG_TYPE_SET_LOG_LEVEL:
+            LOG_CMSG("set log level %u", (unsigned) msg->set_log_level.level);
             break;
         default:
             LOG_CMSG("unknown type: %u", (unsigned) msg->type);
