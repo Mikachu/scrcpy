@@ -558,7 +558,7 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
      */
     private static void scheduleDisplayPowerOff(int displayId) {
         EXECUTOR.schedule(() -> {
-            Ln.i("Forcing display off");
+            Ln.v("Forcing display off");
             Device.setDisplayPower(displayId, false);
         }, 200, TimeUnit.MILLISECONDS);
     }
@@ -607,7 +607,7 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
         boolean ok = Device.setClipboardText(text);
         isSettingClipboard.set(false);
         if (ok) {
-            Ln.i("Device clipboard set");
+            Ln.v("Device clipboard set");
         }
 
         // On Android >= 7, also press the PASTE key if requested
@@ -673,7 +673,7 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
         if (searchByName) {
             name = name.substring(1);
 
-            Ln.i("Processing Android apps... (this may take some time)");
+            Ln.v("Processing Android apps... (this may take some time)");
             List<DeviceApp> apps = Device.findByName(name);
             if (apps.isEmpty()) {
                 Ln.w("No app found for name \"" + name + "\"");
@@ -752,7 +752,7 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
         if (setDisplayPowerOk) {
             // Do not keep display power off for virtual displays: MOD+p must wake up the physical device
             keepDisplayPowerOff = displayId != Device.DISPLAY_ID_NONE && !on;
-            Ln.i("Device display turned " + (on ? "on" : "off"));
+            Ln.v("Device display turned " + (on ? "on" : "off"));
             if (cleanUp != null) {
                 boolean mustRestoreOnExit = !on;
                 cleanUp.setRestoreDisplayPower(mustRestoreOnExit);
@@ -762,21 +762,21 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
 
     private void resetVideo() {
         if (surfaceCapture != null) {
-            Ln.i("Video capture reset");
+            Ln.v("Video capture reset");
             surfaceCapture.requestInvalidate();
         }
     }
 
     private void setMaxFps(float fps) {
         if (surfaceEncoder != null) {
-            Ln.i("Setting max FPS to: " + fps);
+            Ln.v("Setting max FPS to: " + fps);
             surfaceEncoder.setMaxFps(fps);
         }
     }
 
     private void setBitRate(int bitRate) {
         if (surfaceEncoder != null) {
-            Ln.i("Setting bit rate to: " + bitRate);
+            Ln.v("Setting bit rate to: " + bitRate);
             surfaceEncoder.setBitRate(bitRate);
         }
     }
