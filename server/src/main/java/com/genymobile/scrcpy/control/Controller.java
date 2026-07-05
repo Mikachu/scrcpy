@@ -351,6 +351,9 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
                     Ln.i("Log level set to: " + levels[levelOrdinal]);
                 }
                 break;
+            case ControlMessage.TYPE_LIST_APPS:
+                listAppsAsync();
+                break;
             default:
                 // do nothing
         }
@@ -659,6 +662,13 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
         }
 
         return data.virtualDisplayId;
+    }
+
+    private void listAppsAsync() {
+        if (startAppExecutor == null) {
+            startAppExecutor = Executors.newSingleThreadExecutor();
+        }
+        startAppExecutor.submit(() -> Ln.i(LogUtils.buildAppListMessage()));
     }
 
     private void startAppAsync(String name) {

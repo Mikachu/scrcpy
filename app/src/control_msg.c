@@ -200,6 +200,7 @@ sc_control_msg_serialize(const struct sc_control_msg *msg, uint8_t *buf) {
         case SC_CONTROL_MSG_TYPE_ROTATE_DEVICE:
         case SC_CONTROL_MSG_TYPE_OPEN_HARD_KEYBOARD_SETTINGS:
         case SC_CONTROL_MSG_TYPE_RESET_VIDEO:
+        case SC_CONTROL_MSG_TYPE_LIST_APPS:
             // no additional data
             return 1;
         default:
@@ -338,6 +339,9 @@ sc_control_msg_log(const struct sc_control_msg *msg) {
             break;
         case SC_CONTROL_MSG_TYPE_SET_LOG_LEVEL:
             LOG_CMSG("set log level %u", (unsigned) msg->set_log_level.level);
+            break;
+        case SC_CONTROL_MSG_TYPE_LIST_APPS:
+            LOG_CMSG("list apps");
             break;
         default:
             LOG_CMSG("unknown type: %u", (unsigned) msg->type);

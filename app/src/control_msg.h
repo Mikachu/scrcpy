@@ -46,6 +46,7 @@ enum sc_control_msg_type {
     SC_CONTROL_MSG_TYPE_SET_MAX_FPS,
     SC_CONTROL_MSG_TYPE_SET_BIT_RATE,
     SC_CONTROL_MSG_TYPE_SET_LOG_LEVEL,
+    SC_CONTROL_MSG_TYPE_LIST_APPS,
 };
 
 enum sc_copy_key {

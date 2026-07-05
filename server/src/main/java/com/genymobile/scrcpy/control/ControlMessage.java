@@ -28,6 +28,7 @@ public final class ControlMessage {
     public static final int TYPE_SET_MAX_FPS = 18;
     public static final int TYPE_SET_BIT_RATE = 19;
     public static final int TYPE_SET_LOG_LEVEL = 20;
+    public static final int TYPE_LIST_APPS = 21;
 
     public static final long SEQUENCE_INVALID = 0;
 

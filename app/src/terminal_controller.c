@@ -116,6 +116,14 @@ handle_command(struct sc_terminal_controller *tc, const char *cmd) {
                 }
             }
         }
+    } else if (!strcmp(cmd, "listapps")) {
+        if (tc->controller) {
+            struct sc_control_msg msg;
+            msg.type = SC_CONTROL_MSG_TYPE_LIST_APPS;
+            if (!sc_controller_push_msg(tc->controller, &msg)) {
+                LOGW("Could not push list_apps message");
+            }
+        }
     } else if (!strncmp(cmd, "start ", offset = 6)) {
         if (tc->controller) {
             char *name = strdup(cmd + offset);
@@ -154,7 +162,7 @@ handle_command(struct sc_terminal_controller *tc, const char *cmd) {
         sc_push_event(SDL_QUIT);
     } else if (cmd[0] != '\0') {
         LOGW("Unknown terminal command: %s", cmd);
-        LOGI("Commands: pause, unpause, fps N, bitrate B, afps [...], start [app], quit");
+        LOGI("Commands: pause, unpause, fps N, bitrate B, afps [...], listapps, start [app], quit");
     }
 }
 
