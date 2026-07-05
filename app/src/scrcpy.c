@@ -990,7 +990,8 @@ aoa_complete:
             options->control ? &s->controller : NULL;
         if (sc_terminal_controller_init(&s->terminal_controller,
                                          tc_screen, tc_ap, tc_controller,
-                                         activity_fps_initialized ? &s->activity_fps : NULL)) {
+                                         activity_fps_initialized ? &s->activity_fps : NULL,
+                                         options->start_app)) {
             terminal_controller_initialized = true;
             if (sc_terminal_controller_start(&s->terminal_controller)) {
                 terminal_controller_started = true;

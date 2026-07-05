@@ -116,11 +116,45 @@ handle_command(struct sc_terminal_controller *tc, const char *cmd) {
                 }
             }
         }
+    } else if (!strncmp(cmd, "start ", offset = 6)) {
+        if (tc->controller) {
+            char *name = strdup(cmd + offset);
+            if (!name) {
+                LOG_OOM();
+            } else {
+                struct sc_control_msg msg;
+                msg.type = SC_CONTROL_MSG_TYPE_START_APP;
+                msg.start_app.name = name;
+                if (!sc_controller_push_msg(tc->controller, &msg)) {
+                    LOGW("Could not push start_app message");
+                    free(name);
+                }
+            }
+        }
+    } else if (!strcmp(cmd, "start")) {
+        if (tc->controller) {
+            if (!tc->start_app) {
+                LOGW("No app configured (use --start-app)");
+            } else {
+                char *name = strdup(tc->start_app);
+                if (!name) {
+                    LOG_OOM();
+                } else {
+                    struct sc_control_msg msg;
+                    msg.type = SC_CONTROL_MSG_TYPE_START_APP;
+                    msg.start_app.name = name;
+                    if (!sc_controller_push_msg(tc->controller, &msg)) {
+                        LOGW("Could not push start_app message");
+                        free(name);
+                    }
+                }
+            }
+        }
     } else if (!strcmp(cmd, "quit") || !strcmp(cmd, "q")) {
         sc_push_event(SDL_QUIT);
     } else if (cmd[0] != '\0') {
         LOGW("Unknown terminal command: %s", cmd);
-        LOGI("Commands: pause, unpause, fps N, bitrate B, afps [...], quit");
+        LOGI("Commands: pause, unpause, fps N, bitrate B, afps [...], start [app], quit");
     }
 }
 
@@ -179,11 +213,13 @@ sc_terminal_controller_init(struct sc_terminal_controller *tc,
                              struct sc_screen *screen,
                              struct sc_audio_player *ap,
                              struct sc_controller *controller,
-                             struct sc_activity_fps *activity_fps) {
+                             struct sc_activity_fps *activity_fps,
+                             const char *start_app) {
     tc->screen = screen;
     tc->ap = ap;
     tc->controller = controller;
     tc->activity_fps = activity_fps;
+    tc->start_app = start_app;
     tc->muted = false;
     if (pipe(tc->cancel_pipe) == -1) {
         LOGE("Could not create cancel pipe for terminal controller");
