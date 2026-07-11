@@ -162,6 +162,10 @@ handle_command(struct sc_terminal_controller *tc, const char *cmd) {
         if (!tc->controller) return;
         int off = !strcmp(cmd + offset, "off");
         int on = !strcmp(cmd + offset, "on");
+        if (!off && !on) {
+            LOGW("Unknown argument: %s", cmd + offset);
+            return;
+        }
         int video = cmd[0] == 'v';
         struct sc_control_msg msg;
         msg.type = video ? SC_CONTROL_MSG_TYPE_SET_VIDEO_ENABLED :
@@ -183,19 +187,13 @@ static int
 run_terminal_controller(void *data) {
     struct sc_terminal_controller *tc = data;
 
-    int tty_fd = open("/dev/tty", O_RDONLY);
-    if (tty_fd == -1) {
-        LOGW("Could not open /dev/tty, terminal control disabled");
-        return 0;
-    }
-
     LOGV("Terminal control ready.");
 
     char line[256];
     int pos = 0;
 
     struct pollfd fds[2];
-    fds[0].fd = tty_fd;
+    fds[0].fd = 0;
     fds[0].events = POLLIN;
     fds[1].fd = tc->cancel_pipe[0];
     fds[1].events = POLLIN;
@@ -203,6 +201,8 @@ run_terminal_controller(void *data) {
     for (;;) {
         int r = poll(fds, 2, -1);
         if (r < 0) {
+            if (errno == EINTR)
+                continue;
             break;
         }
         if (fds[1].revents & POLLIN) {
@@ -212,8 +212,10 @@ run_terminal_controller(void *data) {
             continue;
         }
         char c;
-        ssize_t n = read(tty_fd, &c, 1);
-        if (n <= 0) {
+        if (tcgetpgrp(0) != getpgrp())
+            continue;
+        ssize_t n = read(0, &c, 1);
+        if (n < 0) {
             break;
         }
         if (c == '\n') {
@@ -225,7 +227,6 @@ run_terminal_controller(void *data) {
         }
     }
 
-    close(tty_fd);
     return 0;
 }
 
