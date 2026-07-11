@@ -26,6 +26,14 @@ do_set_paused(void *userdata) {
 static void
 handle_command(struct sc_terminal_controller *tc, const char *cmd) {
     int offset;
+    char *alias = NULL;
+    if (!strncmp(cmd, "b ", offset = 2)) {
+        if (asprintf(&alias, "bitrate %s", cmd + offset))
+            cmd = alias;
+    } else if (!strncmp(cmd, "size ", offset = 5)) {
+        if (asprintf(&alias, "video size %s", cmd + offset))
+            cmd = alias;
+    }
     if (!strcmp(cmd, "pause") || !strcmp(cmd, "p")) {
         if (tc->screen) {
             struct pause_data *data = malloc(sizeof(*data));
@@ -174,21 +182,22 @@ handle_command(struct sc_terminal_controller *tc, const char *cmd) {
             }
         }
     } else if (!strncmp(cmd, "video ", offset = 6) || !strncmp(cmd, "audio ", offset = 6)) {
-        if (!tc->controller) return;
-        int off = !strcmp(cmd + offset, "off");
-        int on = !strcmp(cmd + offset, "on");
-        if (!off && !on) {
-            LOGW("Unknown argument: %s", cmd + offset);
-            return;
-        }
-        int video = cmd[0] == 'v';
-        struct sc_control_msg msg;
-        msg.type = video ? SC_CONTROL_MSG_TYPE_SET_VIDEO_ENABLED :
-                           SC_CONTROL_MSG_TYPE_SET_AUDIO_ENABLED;
-        msg.set_stream_enabled.value = on;
-        // XXX add source parsing too
-        if (!sc_controller_push_msg(tc->controller, &msg)) {
-            LOGW("Could not push stream enabled message");
+        if (tc->controller) {
+            int off = !strcmp(cmd + offset, "off");
+            int on = !strcmp(cmd + offset, "on");
+            if (!off && !on) {
+                LOGW("Unknown argument: %s", cmd + offset);
+                return;
+            }
+            int video = cmd[0] == 'v';
+            struct sc_control_msg msg;
+            msg.type = video ? SC_CONTROL_MSG_TYPE_SET_VIDEO_ENABLED :
+                               SC_CONTROL_MSG_TYPE_SET_AUDIO_ENABLED;
+            msg.set_stream_enabled.value = on;
+            // XXX add source parsing too
+            if (!sc_controller_push_msg(tc->controller, &msg)) {
+                LOGW("Could not push stream enabled message");
+            }
         }
     } else if (!strcmp(cmd, "quit") || !strcmp(cmd, "q")) {
         sc_push_event(SDL_QUIT);
@@ -196,6 +205,7 @@ handle_command(struct sc_terminal_controller *tc, const char *cmd) {
         LOGW("Unknown terminal command: %s", cmd);
         LOGI("Commands: pause, unpause, fps N, bitrate B, afps [...], listapps, start [app], quit");
     }
+    free(alias);
 }
 
 static int
