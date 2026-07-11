@@ -100,6 +100,10 @@ public class Options {
         return maxSize;
     }
 
+    public void setMaxSize(int maxSize) {
+        this.maxSize = maxSize;
+    }
+
     public VideoCodec getVideoCodec() {
         return videoCodec;
     }
@@ -128,8 +132,16 @@ public class Options {
         return audioBitRate;
     }
 
+    public void setVideoBitRate(int videoBitRate) {
+        this.videoBitRate = videoBitRate;
+    }
+
     public float getMaxFps() {
         return maxFps;
+    }
+
+    public void setMaxFps(float maxFps) {
+        this.maxFps = maxFps;
     }
 
     public float getAngle() {

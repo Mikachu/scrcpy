@@ -842,14 +842,13 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
 
     private void handleSetMaxSize(String spec) {
         SurfaceCapture sc = surfaceCapture;
-        SurfaceEncoder se = surfaceEncoder;
-        if (sc == null || se == null) {
-            Ln.w("No video stream to resize");
-            return;
-        }
         int maxSize;
         if (spec.endsWith("%")) {
             try {
+                if (sc == null) {
+                    Ln.w("No video stream to resize");
+                    return;
+                }
                 int pct = Integer.parseInt(spec.substring(0, spec.length() - 1));
                 Size source = sc.getSourceSize();  
                 if (source == null) {
@@ -870,10 +869,14 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
                 return;
             }
         }
-        sc.setMaxSize(maxSize);
+        if (sc != null) {
+            sc.setMaxSize(maxSize);
+        }
+        options.setMaxSize(maxSize);
     }
 
     private void setMaxFps(float fps) {
+        options.setMaxFps(fps);
         if (surfaceEncoder != null) {
             Ln.v("Setting max FPS to: " + fps);
             surfaceEncoder.setMaxFps(fps);
@@ -881,6 +884,7 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
     }
 
     private void setBitRate(int bitRate) {
+        options.setVideoBitRate(bitRate);
         if (surfaceEncoder != null) {
             Ln.v("Setting bit rate to: " + bitRate);
             surfaceEncoder.setBitRate(bitRate);
