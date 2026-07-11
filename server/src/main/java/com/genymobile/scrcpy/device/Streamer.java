@@ -66,6 +66,16 @@ public final class Streamer {
         IO.writeFully(fd, code, 0, code.length);
     }
 
+    public void writeStopStream() throws IOException {
+        // Write a zero-length packet to signal that the stream is paused.
+        // The client demuxer recognizes len=0 as a mid-stream pause sentinel.
+        ByteBuffer buf = ByteBuffer.allocate(12);
+        buf.putLong(0); // pts_flags = 0
+        buf.putInt(0);  // len = 0
+        buf.flip();
+        IO.writeFully(fd, buf);
+    }
+
     public void writePacket(ByteBuffer buffer, long pts, boolean config, boolean keyFrame) throws IOException {
         if (config) {
             if (codec == AudioCodec.OPUS) {

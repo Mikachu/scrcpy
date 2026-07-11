@@ -194,6 +194,10 @@ sc_control_msg_serialize(const struct sc_control_msg *msg, uint8_t *buf) {
         case SC_CONTROL_MSG_TYPE_SET_LOG_LEVEL:
             buf[1] = msg->set_log_level.level;
             return 2;
+        case SC_CONTROL_MSG_TYPE_SET_VIDEO_ENABLED:
+        case SC_CONTROL_MSG_TYPE_SET_AUDIO_ENABLED:
+            buf[1] = msg->set_stream_enabled.value;
+            return 2;
         case SC_CONTROL_MSG_TYPE_EXPAND_NOTIFICATION_PANEL:
         case SC_CONTROL_MSG_TYPE_EXPAND_SETTINGS_PANEL:
         case SC_CONTROL_MSG_TYPE_COLLAPSE_PANELS:
@@ -340,6 +344,12 @@ sc_control_msg_log(const struct sc_control_msg *msg) {
         case SC_CONTROL_MSG_TYPE_SET_LOG_LEVEL:
             LOG_CMSG("set log level %u", (unsigned) msg->set_log_level.level);
             break;
+        case SC_CONTROL_MSG_TYPE_SET_VIDEO_ENABLED:
+            LOG_CMSG("set video stream %u", (unsigned) msg->set_stream_enabled.value);
+            break;
+        case SC_CONTROL_MSG_TYPE_SET_AUDIO_ENABLED:
+            LOG_CMSG("set audio stream %u", (unsigned) msg->set_stream_enabled.value);
+            break;
         case SC_CONTROL_MSG_TYPE_LIST_APPS:
             LOG_CMSG("list apps");
             break;
@@ -355,8 +365,19 @@ sc_control_msg_is_droppable(const struct sc_control_msg *msg) {
     // UHID_INPUT messages for this device to be invalid.
     // Cannot drop UHID_DESTROY messages either, because a further UHID_CREATE
     // with the same id may fail.
-    return msg->type != SC_CONTROL_MSG_TYPE_UHID_CREATE
-        && msg->type != SC_CONTROL_MSG_TYPE_UHID_DESTROY;
+    switch (msg->type) {
+        case SC_CONTROL_MSG_TYPE_UHID_CREATE:
+        case SC_CONTROL_MSG_TYPE_UHID_DESTROY:
+        case SC_CONTROL_MSG_TYPE_START_APP:
+        case SC_CONTROL_MSG_TYPE_RESET_VIDEO:
+        case SC_CONTROL_MSG_TYPE_SET_LOG_LEVEL:
+        case SC_CONTROL_MSG_TYPE_SET_VIDEO_ENABLED:
+        case SC_CONTROL_MSG_TYPE_SET_AUDIO_ENABLED:
+        case SC_CONTROL_MSG_TYPE_LIST_APPS:
+            return false;
+        default:
+            return true;
+    }
 }
 
 void

@@ -594,8 +594,8 @@ sc_server_connect_to(struct sc_server *server, struct sc_server_info *info) {
     const char *serial = server->serial;
     assert(serial);
 
-    bool video = server->params.video;
-    bool audio = server->params.audio;
+    bool video = true;
+    bool audio = true;
     bool control = server->params.control;
 
     sc_socket video_socket = SC_SOCKET_NONE;

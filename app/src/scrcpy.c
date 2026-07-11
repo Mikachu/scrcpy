@@ -284,13 +284,26 @@ sc_video_demuxer_on_ended(struct sc_demuxer *demuxer,
     (void) demuxer;
     (void) userdata;
 
-    // The device may not decide to disable the video
-    assert(status != SC_DEMUXER_STATUS_DISABLED);
-
     if (status == SC_DEMUXER_STATUS_EOS) {
         sc_push_event(SC_EVENT_DEVICE_DISCONNECTED);
     } else {
         sc_push_event(SC_EVENT_DEMUXER_ERROR);
+    }
+}
+
+static void
+do_hide_window(void *userdata) {
+    struct sc_screen *screen = userdata;
+    screen->has_frame = false;
+    sc_screen_hide_window(screen);
+}
+
+static void
+sc_video_demuxer_on_paused(struct sc_demuxer *demuxer, void *userdata) {
+    (void) demuxer;
+    struct scrcpy *s = userdata;
+    if (!sc_post_to_main_thread(do_hide_window, &s->screen)) {
+        LOGW("Could not post hide window to main thread");
     }
 }
 
@@ -588,15 +601,16 @@ scrcpy(struct scrcpy_options *options) {
         file_pusher_initialized = true;
     }
 
-    if (options->video) {
+    if (true /*options->video*/) {
         static const struct sc_demuxer_callbacks video_demuxer_cbs = {
             .on_ended = sc_video_demuxer_on_ended,
+            .on_paused = sc_video_demuxer_on_paused,
         };
         sc_demuxer_init(&s->video_demuxer, "video", s->server.video_socket,
-                        &video_demuxer_cbs, NULL);
+                        &video_demuxer_cbs, s);
     }
 
-    if (options->audio) {
+    if (true /*options->audio*/) {
         static const struct sc_demuxer_callbacks audio_demuxer_cbs = {
             .on_ended = sc_audio_demuxer_on_ended,
         };
@@ -604,8 +618,8 @@ scrcpy(struct scrcpy_options *options) {
                         &audio_demuxer_cbs, options);
     }
 
-    bool needs_video_decoder = options->video_playback;
-    bool needs_audio_decoder = options->audio_playback;
+    bool needs_video_decoder = true /*options->video_playback*/;
+    bool needs_audio_decoder = true /*options->audio_playback*/;
 #ifdef HAVE_V4L2
     needs_video_decoder |= !!options->v4l2_device;
 #endif
@@ -828,7 +842,7 @@ aoa_complete:
             options->window_title ? options->window_title : info->device_name;
 
         struct sc_screen_params screen_params = {
-            .video = options->video_playback,
+            .video = true /*options->video_playback*/,
             .controller = controller,
             .fp = fp,
             .kp = kp,
@@ -866,7 +880,7 @@ aoa_complete:
             activity_fps_started = true;
         }
 
-        if (options->video_playback) {
+        if (true /*options->video_playback*/) {
             struct sc_frame_source *src = &s->video_decoder.frame_source;
             if (options->video_buffer) {
                 sc_delay_buffer_init(&s->video_buffer,
@@ -879,7 +893,7 @@ aoa_complete:
         }
     }
 
-    if (options->audio_playback) {
+    if (true /*options->audio_playback*/) {
         sc_audio_player_init(&s->audio_player, options->audio_buffer,
                              options->audio_output_buffer);
         sc_frame_source_add_sink(&s->audio_decoder.frame_source,
@@ -908,14 +922,14 @@ aoa_complete:
     // Now that the header values have been consumed, the socket(s) will
     // receive the stream(s). Start the demuxer(s).
 
-    if (options->video) {
+    if (true /*options->video*/) {
         if (!sc_demuxer_start(&s->video_demuxer)) {
             goto end;
         }
         video_demuxer_started = true;
     }
 
-    if (options->audio) {
+    if (true /*options->audio*/) {
         if (!sc_demuxer_start(&s->audio_demuxer)) {
             goto end;
         }
@@ -985,7 +999,7 @@ aoa_complete:
     {
         struct sc_screen *tc_screen = options->window ? &s->screen : NULL;
         struct sc_audio_player *tc_ap =
-            options->audio_playback ? &s->audio_player : NULL;
+            true /*options->audio_playback*/ ? &s->audio_player : NULL;
         struct sc_controller *tc_controller =
             options->control ? &s->controller : NULL;
         if (sc_terminal_controller_init(&s->terminal_controller,
@@ -1014,7 +1028,7 @@ aoa_complete:
     }
 #endif
 
-    if (options->video_playback) {
+    if (screen_initialized) {
         // Close the window immediately on closing, because screen_destroy()
         // may only be called once the video demuxer thread is joined (it may
         // take time)

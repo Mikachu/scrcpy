@@ -12,6 +12,19 @@ import com.genymobile.scrcpy.device.Position;
 import com.genymobile.scrcpy.device.Size;
 import com.genymobile.scrcpy.util.Ln;
 import com.genymobile.scrcpy.util.LogUtils;
+import com.genymobile.scrcpy.audio.AudioCapture;
+import com.genymobile.scrcpy.audio.AudioCodec;
+import com.genymobile.scrcpy.audio.AudioDirectCapture;
+import com.genymobile.scrcpy.audio.AudioEncoder;
+import com.genymobile.scrcpy.audio.AudioPlaybackCapture;
+import com.genymobile.scrcpy.audio.AudioRawRecorder;
+import com.genymobile.scrcpy.audio.AudioSource;
+import com.genymobile.scrcpy.device.NewDisplay;
+import com.genymobile.scrcpy.device.Streamer;
+import com.genymobile.scrcpy.video.CameraCapture;
+import com.genymobile.scrcpy.video.NewDisplayCapture;
+import com.genymobile.scrcpy.video.ScreenCapture;
+import com.genymobile.scrcpy.video.VideoSource;
 import com.genymobile.scrcpy.video.SurfaceCapture;
 import com.genymobile.scrcpy.video.SurfaceEncoder;
 import com.genymobile.scrcpy.video.VirtualDisplayListener;
@@ -101,9 +114,14 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
     // Used for resetting video encoding on RESET_VIDEO message
     private SurfaceCapture surfaceCapture;
     private SurfaceEncoder surfaceEncoder;
+    private final Options options;
+    private Streamer videoStreamer;
+    private Streamer audioStreamer;
+    private AsyncProcessor audioEncoder;
 
     public Controller(ControlChannel controlChannel, CleanUp cleanUp, Options options) {
         this.displayId = options.getDisplayId();
+        this.options = options;
         this.controlChannel = controlChannel;
         this.cleanUp = cleanUp;
         this.clipboardAutosync = options.getClipboardAutosync();
@@ -156,6 +174,18 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
 
     public void setSurfaceEncoder(SurfaceEncoder surfaceEncoder) {
         this.surfaceEncoder = surfaceEncoder;
+    }
+
+    public void setVideoStreamer(Streamer videoStreamer) {
+        this.videoStreamer = videoStreamer;
+    }
+
+    public void setAudioStreamer(Streamer audioStreamer) {
+        this.audioStreamer = audioStreamer;
+    }
+
+    public void setAudioEncoder(AsyncProcessor audioEncoder) {
+        this.audioEncoder = audioEncoder;
     }
 
     private UhidManager getUhidManager() {
@@ -251,6 +281,14 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
             thread.interrupt();
         }
         sender.stop();
+        SurfaceEncoder se = surfaceEncoder;
+        if (se != null) {
+            se.stop();
+        }
+        AsyncProcessor ae = audioEncoder;
+        if (ae != null) {
+            ae.stop();
+        }
     }
 
     @Override
@@ -259,6 +297,14 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
             thread.join();
         }
         sender.join();
+        SurfaceEncoder se = surfaceEncoder;
+        if (se != null) {
+            se.join();
+        }
+        AsyncProcessor ae = audioEncoder;
+        if (ae != null) {
+            ae.join();
+        }
     }
 
     private boolean handleEvent() throws IOException {
@@ -353,6 +399,12 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
                 break;
             case ControlMessage.TYPE_LIST_APPS:
                 listAppsAsync();
+                break;
+            case ControlMessage.TYPE_SET_VIDEO_ENABLED:
+                setVideoEnabled(msg.getValue());
+                break;
+            case ControlMessage.TYPE_SET_AUDIO_ENABLED:
+                setAudioEnabled(msg.getValue());
                 break;
             default:
                 // do nothing
@@ -796,6 +848,94 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
         if (surfaceEncoder != null) {
             Ln.v("Setting bit rate to: " + bitRate);
             surfaceEncoder.setBitRate(bitRate);
+        }
+    }
+
+    private void setVideoEnabled(int value) {
+        SurfaceEncoder oldEncoder = surfaceEncoder;
+        surfaceCapture = null;
+        surfaceEncoder = null;
+        // XXX not checking value for start/stop?
+        if (oldEncoder != null) {
+            oldEncoder.stop();
+            try {
+                oldEncoder.join();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            if (videoStreamer != null) {
+                try {
+                    videoStreamer.writeStopStream();
+                } catch (IOException e) {
+                    Ln.e("Failed to write video stop stream", e);
+                }
+            }
+        }
+
+        if (value != 0 && videoStreamer != null) {
+            // XXX handle source argument
+            SurfaceCapture capture;
+            if (options.getVideoSource() == VideoSource.DISPLAY) {
+                NewDisplay newDisplay = options.getNewDisplay();
+                if (newDisplay != null) {
+                    capture = new NewDisplayCapture(this, options);
+                } else {
+                    capture = new ScreenCapture(this, options);
+                }
+            } else {
+                capture = new CameraCapture(options);
+            }
+            SurfaceEncoder encoder = new SurfaceEncoder(capture, videoStreamer, options);
+            surfaceCapture = capture;
+            surfaceEncoder = encoder;
+            encoder.start((fatalError) -> Ln.d("Video encoder terminated, fatalError=" + fatalError));
+            Ln.i("Video enabled");
+        } else {
+            Ln.i("Video disabled");
+        }
+    }
+
+    private void setAudioEnabled(int value) {
+        AsyncProcessor oldEncoder = audioEncoder;
+        audioEncoder = null;
+        // XXX not checking value for start/stop?
+        if (oldEncoder != null) {
+            oldEncoder.stop();
+            try {
+                oldEncoder.join();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            if (audioStreamer != null) {
+                try {
+                    audioStreamer.writeStopStream();
+                } catch (IOException e) {
+                    Ln.e("Failed to write audio stop stream", e);
+                }
+            }
+        }
+
+        if (value != 0 && audioStreamer != null) {
+            // XXX handle source argument
+            AudioSource audioSource = options.getAudioSource();
+            AudioCapture capture;
+            if (audioSource.isDirect()) {
+                capture = new AudioDirectCapture(audioSource);
+            } else {
+                capture = new AudioPlaybackCapture(options.getAudioDup());
+            }
+            AudioCodec audioCodec = options.getAudioCodec();
+            AsyncProcessor encoder;
+            if (audioCodec == AudioCodec.RAW) {
+                encoder = new AudioRawRecorder(capture, audioStreamer);
+            } else {
+                encoder = new AudioEncoder(capture, audioStreamer, options);
+            }
+            audioEncoder = encoder;
+            encoder.start((fatalError) -> Ln.d("Audio encoder terminated, fatalError=" + fatalError));
+            Ln.i("Audio enabled");
+        } else {
+            Ln.i("Audio disabled");
         }
     }
 }

@@ -2871,17 +2871,12 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
     }
 
     if (!opts->video) {
-        opts->video_playback = false;
         // Do not power on the device on start if video capture is disabled
         opts->power_on = false;
     }
 
     if (!opts->video_playback)
         opts->window = false;
-
-    if (!opts->audio) {
-        opts->audio_playback = false;
-    }
 
     if (opts->video && !opts->video_playback && !opts->record_filename
             && !v4l2) {
@@ -2890,8 +2885,7 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
     }
 
     if (!opts->video && !opts->audio && !opts->control && !otg) {
-        LOGE("No video, no audio, no control, no OTG: nothing to do");
-        return false;
+        LOGV("No video, no audio, no control, no OTG: use 'video on' or something");
     }
 
     if (!opts->video && !otg) {
@@ -2899,7 +2893,7 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
         opts->require_audio = true;
     }
 
-    if (opts->audio_playback && opts->audio_buffer == -1) {
+    if (opts->audio_buffer == -1) {
         if (opts->audio_codec == SC_CODEC_FLAC) {
             // Use 50 ms audio buffer by default, but use a higher value for
             // FLAC, which is not low latency (the default encoder produces

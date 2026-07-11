@@ -101,7 +101,7 @@ public final class Server {
 
         List<AsyncProcessor> asyncProcessors = new ArrayList<>();
 
-        DesktopConnection connection = DesktopConnection.open(scid, tunnelForward, video, audio, control, sendDummyByte);
+        DesktopConnection connection = DesktopConnection.open(scid, tunnelForward, true, true, control, sendDummyByte);
         try {
             if (options.getSendDeviceMeta()) {
                 connection.sendDeviceMeta(Device.getDeviceName());
@@ -115,6 +115,16 @@ public final class Server {
                 asyncProcessors.add(controller);
             }
 
+            Streamer videoStreamer = new Streamer(connection.getVideoFd(), options.getVideoCodec(), options.getSendCodecMeta(), options.getSendFrameMeta());
+            Streamer audioStreamer = new Streamer(connection.getAudioFd(), options.getAudioCodec(), options.getSendCodecMeta(), options.getSendFrameMeta());
+            if (controller != null) {
+                controller.setVideoStreamer(videoStreamer);
+                controller.setAudioStreamer(audioStreamer);
+            }
+
+            if (!video) videoStreamer.writeDisableStream(false);
+            if (!audio) audioStreamer.writeDisableStream(false);
+
             if (audio) {
                 AudioCodec audioCodec = options.getAudioCodec();
                 AudioSource audioSource = options.getAudioSource();
@@ -125,19 +135,22 @@ public final class Server {
                     audioCapture = new AudioPlaybackCapture(options.getAudioDup());
                 }
 
-                Streamer audioStreamer = new Streamer(connection.getAudioFd(), audioCodec, options.getSendCodecMeta(), options.getSendFrameMeta());
                 AsyncProcessor audioRecorder;
                 if (audioCodec == AudioCodec.RAW) {
                     audioRecorder = new AudioRawRecorder(audioCapture, audioStreamer);
                 } else {
                     audioRecorder = new AudioEncoder(audioCapture, audioStreamer, options);
                 }
-                asyncProcessors.add(audioRecorder);
+                if (controller != null) {
+                    controller.setAudioStreamer(audioStreamer);
+                    controller.setAudioEncoder(audioRecorder);
+                    audioRecorder.start((fatalError) -> Ln.d("Audio encoder terminated, fatalError=" + fatalError));
+                } else {
+                    asyncProcessors.add(audioRecorder);
+                }
             }
 
             if (video) {
-                Streamer videoStreamer = new Streamer(connection.getVideoFd(), options.getVideoCodec(), options.getSendCodecMeta(),
-                        options.getSendFrameMeta());
                 SurfaceCapture surfaceCapture;
                 if (options.getVideoSource() == VideoSource.DISPLAY) {
                     NewDisplay newDisplay = options.getNewDisplay();
@@ -151,11 +164,13 @@ public final class Server {
                     surfaceCapture = new CameraCapture(options);
                 }
                 SurfaceEncoder surfaceEncoder = new SurfaceEncoder(surfaceCapture, videoStreamer, options);
-                asyncProcessors.add(surfaceEncoder);
 
                 if (controller != null) {
                     controller.setSurfaceCapture(surfaceCapture);
                     controller.setSurfaceEncoder(surfaceEncoder);
+                    surfaceEncoder.start((fatalError) -> Ln.d("Video encoder terminated, fatalError=" + fatalError));
+            } else {
+                asyncProcessors.add(surfaceEncoder);
                 }
             }
 

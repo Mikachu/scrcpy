@@ -30,6 +30,10 @@ enum sc_demuxer_status {
 struct sc_demuxer_callbacks {
     void (*on_ended)(struct sc_demuxer *demuxer, enum sc_demuxer_status,
                      void *userdata);
+    // Optional: called when the stream is paused (sinks already closed)
+    void (*on_paused)(struct sc_demuxer *demuxer, void *userdata);
+    // Optional: called when a new stream starts after a pause
+    void (*on_resumed)(struct sc_demuxer *demuxer, void *userdata);
 };
 
 // The name must be statically allocated (e.g. a string literal)

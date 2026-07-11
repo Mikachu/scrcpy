@@ -47,6 +47,8 @@ enum sc_control_msg_type {
     SC_CONTROL_MSG_TYPE_SET_BIT_RATE,
     SC_CONTROL_MSG_TYPE_SET_LOG_LEVEL,
     SC_CONTROL_MSG_TYPE_LIST_APPS,
+    SC_CONTROL_MSG_TYPE_SET_VIDEO_ENABLED,
+    SC_CONTROL_MSG_TYPE_SET_AUDIO_ENABLED,
 };
 
 enum sc_copy_key {
@@ -124,6 +126,9 @@ struct sc_control_msg {
         struct {
             uint8_t level;
         } set_log_level;
+        struct {
+            uint8_t value;
+        } set_stream_enabled;
     };
 };
 

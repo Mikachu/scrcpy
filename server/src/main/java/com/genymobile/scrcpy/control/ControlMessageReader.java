@@ -63,6 +63,10 @@ public class ControlMessageReader {
                 return parseSetBitRate();
             case ControlMessage.TYPE_SET_LOG_LEVEL:
                 return parseSetLogLevel();
+            case ControlMessage.TYPE_SET_VIDEO_ENABLED:
+                return parseSetVideoEnabled();
+            case ControlMessage.TYPE_SET_AUDIO_ENABLED:
+                return parseSetAudioEnabled();
             default:
                 throw new ControlProtocolException("Unknown event type: " + type);
         }
@@ -186,6 +190,16 @@ public class ControlMessageReader {
     private ControlMessage parseSetLogLevel() throws IOException {
         int logLevel = dis.readUnsignedByte();
         return ControlMessage.createSetLogLevel(logLevel);
+    }
+
+    private ControlMessage parseSetVideoEnabled() throws IOException {
+        int value = dis.readUnsignedByte();
+        return ControlMessage.createSetVideoEnabled(value);
+    }
+
+    private ControlMessage parseSetAudioEnabled() throws IOException {
+        int value = dis.readUnsignedByte();
+        return ControlMessage.createSetAudioEnabled(value);
     }
 
     private Position parsePosition() throws IOException {
