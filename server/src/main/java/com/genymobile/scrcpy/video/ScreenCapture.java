@@ -188,6 +188,11 @@ public class ScreenCapture extends SurfaceCapture {
     }
 
     @Override
+    public Size getSourceSize() {
+        return displayInfo != null ? displayInfo.getSize() : null;
+    }
+
+    @Override
     public boolean setMaxSize(int newMaxSize) {
         maxSize = newMaxSize;
         return true;

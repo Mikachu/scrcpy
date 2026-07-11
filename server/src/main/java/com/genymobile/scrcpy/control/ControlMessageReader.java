@@ -57,6 +57,8 @@ public class ControlMessageReader {
                 return parseUhidDestroy();
             case ControlMessage.TYPE_START_APP:
                 return parseStartApp();
+            case ControlMessage.TYPE_SET_MAX_SIZE:
+                return parseSetMaxSize();
             case ControlMessage.TYPE_SET_MAX_FPS:
                 return parseSetMaxFps();
             case ControlMessage.TYPE_SET_BIT_RATE:
@@ -175,6 +177,11 @@ public class ControlMessageReader {
     private ControlMessage parseStartApp() throws IOException {
         String name = parseString(1);
         return ControlMessage.createStartApp(name);
+    }
+
+    private ControlMessage parseSetMaxSize() throws IOException {
+        String spec = parseString(1);
+        return ControlMessage.createSetMaxSize(spec);
     }
 
     private ControlMessage parseSetMaxFps() throws IOException {

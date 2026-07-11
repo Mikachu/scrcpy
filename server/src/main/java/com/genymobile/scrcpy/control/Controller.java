@@ -383,6 +383,9 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
             case ControlMessage.TYPE_RESET_VIDEO:
                 resetVideo();
                 break;
+            case ControlMessage.TYPE_SET_MAX_SIZE:
+                handleSetMaxSize(msg.getMaxSize());
+                break;
             case ControlMessage.TYPE_SET_MAX_FPS:
                 setMaxFps(msg.getMaxFps());
                 break;
@@ -835,6 +838,39 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
             Ln.v("Video capture reset");
             surfaceCapture.requestInvalidate();
         }
+    }
+
+    private void handleSetMaxSize(String spec) {
+        SurfaceCapture sc = surfaceCapture;
+        SurfaceEncoder se = surfaceEncoder;
+        if (sc == null || se == null) {
+            Ln.w("No video stream to resize");
+            return;
+        }
+        int maxSize;
+        if (spec.endsWith("%")) {
+            try {
+                int pct = Integer.parseInt(spec.substring(0, spec.length() - 1));
+                Size source = sc.getSourceSize();  
+                if (source == null) {
+                    Ln.w("No source size available for resize");
+                    return;
+                }
+                int dim = Math.max(source.getWidth(), source.getHeight());
+                maxSize = (dim * pct / 100) & ~7; // round to multiple of 8
+            } catch (NumberFormatException e) {
+                Ln.w("Invalid resize spec: " + spec);
+                return;
+            }
+        } else {
+            try {
+                maxSize = Integer.parseInt(spec) & ~7;
+            } catch (NumberFormatException e) {
+                Ln.w("Invalid resize spec: " + spec);
+                return;
+            }
+        }
+        sc.setMaxSize(maxSize);
     }
 
     private void setMaxFps(float fps) {

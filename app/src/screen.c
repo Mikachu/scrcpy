@@ -11,8 +11,6 @@
 #include "options.h"
 #include "util/log.h"
 
-#define DISPLAY_MARGINS 96
-
 #define DOWNCAST(SINK) container_of(SINK, struct sc_screen, frame_sink)
 
 static inline struct sc_size
@@ -71,8 +69,8 @@ get_preferred_display_bounds(struct sc_size *bounds) {
         return false;
     }
 
-    bounds->width = MAX(0, rect.w - DISPLAY_MARGINS);
-    bounds->height = MAX(0, rect.h - DISPLAY_MARGINS);
+    bounds->width = rect.w;
+    bounds->height = rect.h;
     return true;
 }
 
@@ -109,6 +107,11 @@ get_optimal_size(struct sc_size current_size, struct sc_size content_size,
     } else {
         window_size.width = MIN(current_size.width, display_size.width);
         window_size.height = MIN(current_size.height, display_size.height);
+        // Grow to content size if it fits within display bounds
+        window_size.width = MAX(window_size.width,
+                                MIN(content_size.width, display_size.width));
+        window_size.height = MAX(window_size.height,
+                                 MIN(content_size.height, display_size.height));
     }
 
     if (is_optimal_size(window_size, content_size)) {

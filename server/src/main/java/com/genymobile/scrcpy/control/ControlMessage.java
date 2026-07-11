@@ -25,12 +25,13 @@ public final class ControlMessage {
     public static final int TYPE_OPEN_HARD_KEYBOARD_SETTINGS = 15;
     public static final int TYPE_START_APP = 16;
     public static final int TYPE_RESET_VIDEO = 17;
-    public static final int TYPE_SET_MAX_FPS = 18;
-    public static final int TYPE_SET_BIT_RATE = 19;
-    public static final int TYPE_SET_LOG_LEVEL = 20;
-    public static final int TYPE_LIST_APPS = 21;
-    public static final int TYPE_SET_VIDEO_ENABLED = 22;
-    public static final int TYPE_SET_AUDIO_ENABLED = 23;
+    public static final int TYPE_SET_MAX_SIZE = 18;
+    public static final int TYPE_SET_MAX_FPS = 19;
+    public static final int TYPE_SET_BIT_RATE = 20;
+    public static final int TYPE_SET_LOG_LEVEL = 21;
+    public static final int TYPE_LIST_APPS = 22;
+    public static final int TYPE_SET_VIDEO_ENABLED = 23;
+    public static final int TYPE_SET_AUDIO_ENABLED = 24;
 
     public static final long SEQUENCE_INVALID = 0;
 
@@ -176,6 +177,13 @@ public final class ControlMessage {
         return msg;
     }
 
+    public static ControlMessage createSetMaxSize(String sizeSpec) {
+        ControlMessage msg = new ControlMessage();
+        msg.type = TYPE_SET_MAX_SIZE;
+        msg.text = sizeSpec;
+        return msg;
+    }
+
     public static ControlMessage createSetMaxFps(float maxFps) {
         ControlMessage msg = new ControlMessage();
         msg.type = TYPE_SET_MAX_FPS;
@@ -293,6 +301,10 @@ public final class ControlMessage {
 
     public int getProductId() {
         return productId;
+    }
+
+    public String getMaxSize() {
+        return text;
     }
 
     public float getMaxFps() {

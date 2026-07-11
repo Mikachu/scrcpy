@@ -158,6 +158,21 @@ handle_command(struct sc_terminal_controller *tc, const char *cmd) {
                 }
             }
         }
+    } else if (!strncmp(cmd, "video size ", offset = 11)) {
+        if (tc->controller) {
+            char *arg = strdup(cmd + offset);
+            struct sc_control_msg msg;
+            msg.type = SC_CONTROL_MSG_TYPE_SET_MAX_SIZE;
+            msg.set_max_size.size_spec = arg;
+            if (!sc_controller_push_msg(tc->controller, &msg)) {
+                LOGW("Could not push set_max_size message");
+            }
+            msg.type = SC_CONTROL_MSG_TYPE_RESET_VIDEO;
+            if (!sc_controller_push_msg(tc->controller, &msg)) {
+                free(arg);
+                LOGW("Could not push reset_video message");
+            }
+        }
     } else if (!strncmp(cmd, "video ", offset = 6) || !strncmp(cmd, "audio ", offset = 6)) {
         if (!tc->controller) return;
         int off = !strcmp(cmd + offset, "off");

@@ -115,7 +115,7 @@ sc_control_msg_serialize(const struct sc_control_msg *msg, uint8_t *buf) {
                                       SC_CONTROL_MSG_INJECT_TEXT_MAX_LENGTH);
             return 1 + len;
         }
-        case SC_CONTROL_MSG_TYPE_INJECT_TOUCH_EVENT:
+        case SC_CONTROL_MSG_TYPE_INJECT_TOUCH_EVENT: {
             buf[1] = msg->inject_touch_event.action;
             sc_write64be(&buf[2], msg->inject_touch_event.pointer_id);
             write_position(&buf[10], &msg->inject_touch_event.position);
@@ -125,7 +125,8 @@ sc_control_msg_serialize(const struct sc_control_msg *msg, uint8_t *buf) {
             sc_write32be(&buf[24], msg->inject_touch_event.action_button);
             sc_write32be(&buf[28], msg->inject_touch_event.buttons);
             return 32;
-        case SC_CONTROL_MSG_TYPE_INJECT_SCROLL_EVENT:
+        }
+        case SC_CONTROL_MSG_TYPE_INJECT_SCROLL_EVENT: {
             write_position(&buf[1], &msg->inject_scroll_event.position);
             // Accept values in the range [-16, 16].
             // Normalize to [-1, 1] in order to use sc_float_to_i16fp().
@@ -139,22 +140,24 @@ sc_control_msg_serialize(const struct sc_control_msg *msg, uint8_t *buf) {
             sc_write16be(&buf[15], (uint16_t) vscroll);
             sc_write32be(&buf[17], msg->inject_scroll_event.buttons);
             return 21;
+        }
         case SC_CONTROL_MSG_TYPE_BACK_OR_SCREEN_ON:
             buf[1] = msg->inject_keycode.action;
             return 2;
         case SC_CONTROL_MSG_TYPE_GET_CLIPBOARD:
             buf[1] = msg->get_clipboard.copy_key;
             return 2;
-        case SC_CONTROL_MSG_TYPE_SET_CLIPBOARD:
+        case SC_CONTROL_MSG_TYPE_SET_CLIPBOARD: {
             sc_write64be(&buf[1], msg->set_clipboard.sequence);
             buf[9] = !!msg->set_clipboard.paste;
             size_t len = write_string(&buf[10], msg->set_clipboard.text,
                                       SC_CONTROL_MSG_CLIPBOARD_TEXT_MAX_LENGTH);
             return 10 + len;
+        }
         case SC_CONTROL_MSG_TYPE_SET_DISPLAY_POWER:
             buf[1] = msg->set_display_power.on;
             return 2;
-        case SC_CONTROL_MSG_TYPE_UHID_CREATE:
+        case SC_CONTROL_MSG_TYPE_UHID_CREATE: {
             sc_write16be(&buf[1], msg->uhid_create.id);
             sc_write16be(&buf[3], msg->uhid_create.vendor_id);
             sc_write16be(&buf[5], msg->uhid_create.product_id);
@@ -170,6 +173,7 @@ sc_control_msg_serialize(const struct sc_control_msg *msg, uint8_t *buf) {
             index += msg->uhid_create.report_desc_size;
 
             return index;
+        }
         case SC_CONTROL_MSG_TYPE_UHID_INPUT:
             sc_write16be(&buf[1], msg->uhid_input.id);
             sc_write16be(&buf[3], msg->uhid_input.size);
@@ -180,6 +184,10 @@ sc_control_msg_serialize(const struct sc_control_msg *msg, uint8_t *buf) {
             return 3;
         case SC_CONTROL_MSG_TYPE_START_APP: {
             size_t len = write_string_tiny(&buf[1], msg->start_app.name, 255);
+            return 1 + len;
+        }
+        case SC_CONTROL_MSG_TYPE_SET_MAX_SIZE: {
+            size_t len = write_string_tiny(&buf[1], msg->set_max_size.size_spec, 255);
             return 1 + len;
         }
         case SC_CONTROL_MSG_TYPE_SET_MAX_FPS: {
@@ -285,6 +293,9 @@ sc_control_msg_log(const struct sc_control_msg *msg) {
             LOG_CMSG("display power %s",
                      msg->set_display_power.on ? "on" : "off");
             break;
+        case SC_CONTROL_MSG_TYPE_SET_MAX_SIZE:
+            LOG_CMSG("set max size %s", msg->set_max_size.size_spec);
+            break;
         case SC_CONTROL_MSG_TYPE_SET_MAX_FPS:
             LOG_CMSG("set max fps %g", (double) msg->set_max_fps.max_fps);
             break;
@@ -369,8 +380,6 @@ sc_control_msg_is_droppable(const struct sc_control_msg *msg) {
         case SC_CONTROL_MSG_TYPE_UHID_CREATE:
         case SC_CONTROL_MSG_TYPE_UHID_DESTROY:
         case SC_CONTROL_MSG_TYPE_START_APP:
-        case SC_CONTROL_MSG_TYPE_RESET_VIDEO:
-        case SC_CONTROL_MSG_TYPE_SET_LOG_LEVEL:
         case SC_CONTROL_MSG_TYPE_SET_VIDEO_ENABLED:
         case SC_CONTROL_MSG_TYPE_SET_AUDIO_ENABLED:
         case SC_CONTROL_MSG_TYPE_LIST_APPS:
@@ -391,6 +400,9 @@ sc_control_msg_destroy(struct sc_control_msg *msg) {
             break;
         case SC_CONTROL_MSG_TYPE_START_APP:
             free(msg->start_app.name);
+            break;
+        case SC_CONTROL_MSG_TYPE_SET_MAX_SIZE:
+            free(msg->set_max_size.size_spec);
             break;
         default:
             // do nothing

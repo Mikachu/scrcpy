@@ -72,6 +72,11 @@ public abstract class SurfaceCapture {
     public abstract Size getSize();
 
     /**
+     * Return the source (pre-encoding) video size, before any max-size constraint.
+     */
+    public abstract Size getSourceSize();
+
+    /**
      * Set the maximum capture size (set by the encoder if it does not support the current size).
      *
      * @param maxSize Maximum size

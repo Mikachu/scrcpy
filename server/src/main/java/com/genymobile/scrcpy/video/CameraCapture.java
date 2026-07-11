@@ -295,6 +295,11 @@ public class CameraCapture extends SurfaceCapture {
     }
 
     @Override
+    public Size getSourceSize() {
+        return captureSize;
+    }
+
+    @Override
     public boolean setMaxSize(int maxSize) {
         if (explicitSize != null) {
             return false;

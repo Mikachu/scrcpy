@@ -256,6 +256,11 @@ public class NewDisplayCapture extends SurfaceCapture {
         return true;
     }
 
+    @Override
+    public synchronized Size getSourceSize() {
+        return displaySize;
+    }
+
     private static int scaleDpi(Size initialSize, int initialDpi, Size size) {
         int den = initialSize.getMax();
         int num = size.getMax();
