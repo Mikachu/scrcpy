@@ -202,8 +202,9 @@ handle_command(struct sc_terminal_controller *tc, const char *cmd) {
     } else if (!strcmp(cmd, "quit") || !strcmp(cmd, "q")) {
         sc_push_event(SDL_QUIT);
     } else if (cmd[0] != '\0') {
-        LOGW("Unknown terminal command: %s", cmd);
-        LOGI("Commands: pause, unpause, fps N, bitrate B, afps [...], listapps, start [app], quit");
+        if (strcmp(cmd, "help"))
+            LOGW("Unknown terminal command: %s", cmd);
+        LOGI("Commands: pause, unpause, fps N, bitrate B, afps [...], listapps, start [app], quit, video on/off, audio on/off, video size [ max pixels | n%% ]");
     }
     free(alias);
 }
