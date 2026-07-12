@@ -537,7 +537,12 @@ sc_screen_show_initial_window(struct sc_screen *screen) {
 
 void
 sc_screen_hide_window(struct sc_screen *screen) {
-    SDL_HideWindow(screen->window);
+    // SDL is very buggy
+    //SDL_HideWindow(screen->window);
+    SDL_SysWMinfo info;
+    SDL_VERSION(&info.version);
+    SDL_GetWindowWMInfo(screen->window, &info);
+    XWithdrawWindow(info.info.x11.display, info.info.x11.window, DefaultScreen(info.info.x11.display));
 }
 
 void
