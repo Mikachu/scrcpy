@@ -3242,29 +3242,6 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
         }
     }
 
-    if (!opts->control) {
-        if (opts->turn_screen_off) {
-            LOGE("Cannot request to turn screen off if control is disabled");
-            return false;
-        }
-        if (opts->stay_awake) {
-            LOGE("Cannot request to stay awake if control is disabled");
-            return false;
-        }
-        if (opts->show_touches) {
-            LOGE("Cannot request to show touches if control is disabled");
-            return false;
-        }
-        if (opts->power_off_on_close) {
-            LOGE("Cannot request power off on close if control is disabled");
-            return false;
-        }
-        if (opts->start_app) {
-            LOGE("Cannot start an Android app if control is disabled");
-            return false;
-        }
-    }
-
 # ifdef _WIN32
     if (!otg && (opts->keyboard_input_mode == SC_KEYBOARD_INPUT_MODE_AOA
                 || opts->mouse_input_mode == SC_MOUSE_INPUT_MODE_AOA)) {

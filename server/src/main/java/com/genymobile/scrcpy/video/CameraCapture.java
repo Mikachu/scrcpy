@@ -426,6 +426,6 @@ public class CameraCapture extends SurfaceCapture {
 
     @Override
     public void requestInvalidate() {
-        // do nothing (the user could not request a reset anyway for now, since there is no controller for camera mirroring)
+        invalidate();
     }
 }

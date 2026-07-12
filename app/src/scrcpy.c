@@ -472,7 +472,7 @@ scrcpy(struct scrcpy_options *options) {
         .screen_off_timeout = options->screen_off_timeout,
         .capture_orientation = options->capture_orientation,
         .capture_orientation_lock = options->capture_orientation_lock,
-        .control = options->control,
+        .control = true,
         .display_id = options->display_id,
         .new_display = options->new_display,
         .display_ime_policy = options->display_ime_policy,
@@ -665,20 +665,21 @@ scrcpy(struct scrcpy_options *options) {
     struct sc_key_processor *kp = NULL;
     struct sc_mouse_processor *mp = NULL;
     struct sc_gamepad_processor *gp = NULL;
+    struct sc_uhid_devices *uhid_devices = NULL;
+
+    static const struct sc_controller_callbacks controller_cbs = {
+        .on_ended = sc_controller_on_ended,
+    };
+
+    if (!sc_controller_init(&s->controller, s->server.control_socket,
+        &controller_cbs, NULL)) {
+        goto end;
+    }
+    controller_initialized = true;
+
+    controller = &s->controller;
 
     if (options->control) {
-        static const struct sc_controller_callbacks controller_cbs = {
-            .on_ended = sc_controller_on_ended,
-        };
-
-        if (!sc_controller_init(&s->controller, s->server.control_socket,
-            &controller_cbs, NULL)) {
-            goto end;
-        }
-        controller_initialized = true;
-
-        controller = &s->controller;
-
 #ifdef HAVE_USB
         bool use_keyboard_aoa =
             options->keyboard_input_mode == SC_KEYBOARD_INPUT_MODE_AOA;
@@ -810,19 +811,19 @@ aoa_complete:
             gp = &s->gamepad_uhid.gamepad_processor;
         }
 
-        struct sc_uhid_devices *uhid_devices = NULL;
         if (uhid_keyboard) {
             sc_uhid_devices_init(&s->uhid_devices, uhid_keyboard);
             uhid_devices = &s->uhid_devices;
         }
 
-        sc_controller_configure(&s->controller, acksync, uhid_devices);
-
-        if (!sc_controller_start(&s->controller)) {
-            goto end;
-        }
-        controller_started = true;
     }
+
+    sc_controller_configure(&s->controller, acksync, uhid_devices);
+
+    if (!sc_controller_start(&s->controller)) {
+        goto end;
+    }
+    controller_started = true;
 
     if (options->activity_fps_config.fps_idle1 != 0 && controller) {
         bool ok = sc_activity_fps_init(&s->activity_fps, &s->controller,
@@ -1000,10 +1001,8 @@ aoa_complete:
         struct sc_screen *tc_screen = options->window ? &s->screen : NULL;
         struct sc_audio_player *tc_ap =
             true /*options->audio_playback*/ ? &s->audio_player : NULL;
-        struct sc_controller *tc_controller =
-            options->control ? &s->controller : NULL;
         if (sc_terminal_controller_init(&s->terminal_controller,
-                                         tc_screen, tc_ap, tc_controller,
+                                         tc_screen, tc_ap, &s->controller,
                                          activity_fps_initialized ? &s->activity_fps : NULL,
                                          options->start_app)) {
             terminal_controller_initialized = true;
