@@ -237,6 +237,14 @@ public class NewDisplayCapture extends SurfaceCapture {
 
     @Override
     public void release() {
+
+        if (virtualDisplay != null) {
+            virtualDisplay.setSurface(null);
+        }
+    }
+
+    @Override
+    public void destroy() {
         displaySizeMonitor.stopAndRelease();
 
         if (virtualDisplay != null) {

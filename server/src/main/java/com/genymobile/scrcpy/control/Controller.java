@@ -114,6 +114,7 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
     // Used for resetting video encoding on RESET_VIDEO message
     private SurfaceCapture surfaceCapture;
     private SurfaceEncoder surfaceEncoder;
+    private NewDisplayCapture newDisplayCapture;
     private final Options options;
     private Streamer videoStreamer;
     private Streamer audioStreamer;
@@ -170,6 +171,9 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
 
     public void setSurfaceCapture(SurfaceCapture surfaceCapture) {
         this.surfaceCapture = surfaceCapture;
+        if (surfaceCapture instanceof NewDisplayCapture) {
+            this.newDisplayCapture = (NewDisplayCapture) surfaceCapture;  
+        }            
     }
 
     public void setSurfaceEncoder(SurfaceEncoder surfaceEncoder) {
@@ -304,6 +308,10 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
         AsyncProcessor ae = audioEncoder;
         if (ae != null) {
             ae.join();
+        }
+        if (newDisplayCapture != null) {
+            newDisplayCapture.destroy();
+            newDisplayCapture = null;
         }
     }
 
@@ -918,7 +926,10 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
             if (options.getVideoSource() == VideoSource.DISPLAY) {
                 NewDisplay newDisplay = options.getNewDisplay();
                 if (newDisplay != null) {
-                    capture = new NewDisplayCapture(this, options);
+                    if (newDisplayCapture == null) {
+                        newDisplayCapture = new NewDisplayCapture(this, options);
+                    }
+                    capture = newDisplayCapture;
                 } else {
                     capture = new ScreenCapture(this, options);
                 }

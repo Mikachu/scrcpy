@@ -65,6 +65,14 @@ public abstract class SurfaceCapture {
     }
 
     /**
+     * Called to fully destroy the capture (e.g. release the virtual display).
+     * Unlike {@link #release()}, this is not reversible.
+     */
+    public void destroy() {
+        // Do nothing by default
+    }
+
+    /**
      * Return the video size
      *
      * @return the video size
