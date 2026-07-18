@@ -33,6 +33,9 @@ handle_command(struct sc_terminal_controller *tc, const char *cmd) {
     } else if (!strncmp(cmd, "size ", offset = 5)) {
         if (asprintf(&alias, "video size %s", cmd + offset))
             cmd = alias;
+    } else if (!strcmp(cmd, "scan")) {
+        if (asprintf(&alias, "scan /sdcard/Download"))
+            cmd = alias;
     }
     if (!strcmp(cmd, "pause") || !strcmp(cmd, "p")) {
         if (tc->screen) {
@@ -197,6 +200,17 @@ handle_command(struct sc_terminal_controller *tc, const char *cmd) {
             // XXX add source parsing too
             if (!sc_controller_push_msg(tc->controller, &msg)) {
                 LOGW("Could not push stream enabled message");
+            }
+        }
+    } else if (!strncmp(cmd, "scan ", offset = 5)) {
+        if (tc->controller) {
+            char *path = strdup(cmd + offset);
+            struct sc_control_msg msg;
+            msg.type = SC_CONTROL_MSG_TYPE_SCAN_FILE;
+            msg.scan_file.path = path;
+            if (!sc_controller_push_msg(tc->controller, &msg)) {
+                LOGW("Could not push scan_file message");
+                free(path);
             }
         }
     } else if (!strcmp(cmd, "quit") || !strcmp(cmd, "q")) {
