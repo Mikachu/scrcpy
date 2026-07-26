@@ -241,6 +241,40 @@ run_demuxer(void *data) {
             }
         }
 
+        // For audio, receive the first packet before opening the codec so we can
+        // set extradata (e.g. the Opus header containing the pre-skip value).
+        AVPacket *first_packet = NULL;
+        if (codec->type == AVMEDIA_TYPE_AUDIO) {
+            first_packet = av_packet_alloc();
+            if (!first_packet) {
+                LOG_OOM();
+                avcodec_free_context(&codec_ctx);
+                break;
+            }
+            if (sc_demuxer_recv_packet(demuxer, first_packet) != SC_RECV_OK) {
+                av_packet_free(&first_packet);
+                avcodec_free_context(&codec_ctx);
+                break;
+            }
+            if (first_packet->pts == AV_NOPTS_VALUE) {
+                LOGD("First packet was config packet, setting extradata");
+                // Config packet: set as extradata before avcodec_open2
+                uint8_t *extradata = av_mallocz(first_packet->size
+                                                + AV_INPUT_BUFFER_PADDING_SIZE);
+                if (!extradata) {
+                    LOG_OOM();
+                    av_packet_free(&first_packet);
+                    avcodec_free_context(&codec_ctx);
+                    break;
+                }
+                memcpy(extradata, first_packet->data, first_packet->size);
+                codec_ctx->extradata = extradata;
+                codec_ctx->extradata_size = first_packet->size;
+                av_packet_free(&first_packet);
+                first_packet = NULL; // consumed, don't push it later
+            }
+            // else: first_packet is a media packet, push it after sinks open
+        }
         if (avcodec_open2(codec_ctx, codec, NULL) < 0) {
             LOGE("Demuxer '%s': could not open codec", demuxer->name);
             avcodec_free_context(&codec_ctx);
@@ -256,6 +290,17 @@ run_demuxer(void *data) {
             demuxer->cbs->on_resumed(demuxer, demuxer->cbs_userdata);
         }
         first_run = false;
+
+        if (first_packet) {
+            LOGD("First packet was audio data");
+            ok = sc_packet_source_sinks_push(&demuxer->packet_source, first_packet);
+            av_packet_free(&first_packet);
+            if (!ok) {
+                sc_packet_source_sinks_close(&demuxer->packet_source);
+                avcodec_free_context(&codec_ctx);
+                break;
+            }
+        }
 
         // Config packets must be merged with the next non-config packet only
         // for H.26x
