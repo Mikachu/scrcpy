@@ -318,8 +318,8 @@ sc_audio_regulator_push(struct sc_audio_regulator *ar, const AVFrame *frame) {
 #endif
 
     ar->samples_since_resync += written;
-    if (ar->samples_since_resync >= ar->sample_rate) {
-        // Recompute compensation every second
+    if (ar->samples_since_resync * 10 >= ar->sample_rate) {
+        // Recompute compensation 10 times every second
         ar->samples_since_resync = 0;
 
         float avg = sc_average_get(&ar->avg_buffering);
@@ -339,11 +339,11 @@ sc_audio_regulator_push(struct sc_audio_regulator *ar, const AVFrame *frame) {
             // target, this would increase underflow
             diff = 0;
         }
-        // Compensate the diff over 4 seconds (but will be recomputed after 1
-        // second)
+        // Compensate the diff over 4 seconds (but will be recomputed after 0.1
+        // seconds)
         int distance = 4 * ar->sample_rate;
-        // Limit compensation rate to 2%
-        int abs_max_diff = distance / 50;
+        // Limit compensation rate to 0.5%
+        int abs_max_diff = distance / 200;
         diff = CLAMP(diff, -abs_max_diff, abs_max_diff);
         LOGV("[Audio] Buffering: target=%" PRIu32 " avg=%f cur=%" PRIu32
              " compensation=%d (underflow=%" PRIu32 ")",
@@ -425,6 +425,7 @@ sc_audio_regulator_init(struct sc_audio_regulator *ar, size_t sample_size,
     // Samples are produced and consumed by blocks, so the buffering must be
     // smoothed to get a relatively stable value.
     sc_average_init(&ar->avg_buffering, 128);
+    ar->avg_buffering.avg = ar->target_buffering;
     ar->samples_since_resync = 0;
 
     ar->received = false;
