@@ -140,15 +140,12 @@ public final class AudioEncoder implements AsyncProcessor {
         }
 
         long pts = bufferInfo.presentationTimeUs;
-        long now = System.nanoTime() / 1000;
-        long duration;
         if (previousPts != 0) {
-            duration = pts - previousPts;
-        } else {
+            long now = System.nanoTime() / 1000;
             // This specific encoder produces PTS matching the exact number of samples
-            duration = pts;
+            long duration = pts - previousPts;
+            bufferInfo.presentationTimeUs = now - duration;
         }
-        bufferInfo.presentationTimeUs = now - duration;
 
         previousPts = pts;
     }
