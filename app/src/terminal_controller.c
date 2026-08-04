@@ -26,29 +26,30 @@ do_set_paused(void *userdata) {
 static void
 handle_command(struct sc_terminal_controller *tc, const char *cmd) {
     int offset;
+    size_t i;
     char *alias = NULL;
-    if (!strncmp(cmd, "b ", offset = 2)) {
-        if (asprintf(&alias, "bitrate %s", cmd + offset))
-            cmd = alias;
-    } else if (!strncmp(cmd, "size ", offset = 5)) {
-        if (asprintf(&alias, "video size %s", cmd + offset))
-            cmd = alias;
-    } else if (!strcmp(cmd, "scan")) {
-        if (asprintf(&alias, "scan /sdcard/Download"))
-            cmd = alias;
-    } else if (!strcmp(cmd, "a")) {
-        if (asprintf(&alias, "audio on"))
-            cmd = alias;
-    } else if (!strcmp(cmd, "aa") || !strcmp(cmd, "A")) {
-        if (asprintf(&alias, "audio off"))
-            cmd = alias;
-    } else if (!strcmp(cmd, "v")) {
-        if (asprintf(&alias, "video on"))
-            cmd = alias;
-    } else if (!strcmp(cmd, "vv") || !strcmp(cmd, "V")) {
-        if (asprintf(&alias, "video off"))
-            cmd = alias;
-    }
+    struct { const char *s; const char *t; }
+        /* prefix aliases, these should include the space */
+        palias[] = { { "b ", "bitrate %s" },
+                     { "size ", "video size %s" },
+        },
+        /* full aliases, these only match if nothing follows */
+        falias[] = { { "scan", "scan /sdcard/Download" },
+                     { "a", "audio on" },
+                     { "A", "audio off" },
+                     { "aa", "audio off" },
+                     { "v", "video on" },
+                     { "V", "video off" },
+                     { "vv", "video off" },
+        };
+    for (i = 0; i < ARRAY_LEN(palias) && !alias; i++)
+        if (!strncmp(cmd, palias[i].s, offset = strlen(palias[i].s)))
+            if (asprintf(&alias, palias[i].t, cmd + offset) >= 0)
+                cmd = alias;
+    for (i = 0; i < ARRAY_LEN(falias) && !alias; i++)
+        if (!strcmp(cmd, falias[i].s))
+            if (asprintf(&alias, falias[i].t) >= 0)
+                cmd = alias;
     if (!strcmp(cmd, "pause") || !strcmp(cmd, "p")) {
         if (tc->screen) {
             struct pause_data *data = malloc(sizeof(*data));
