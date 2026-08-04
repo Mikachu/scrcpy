@@ -36,6 +36,18 @@ handle_command(struct sc_terminal_controller *tc, const char *cmd) {
     } else if (!strcmp(cmd, "scan")) {
         if (asprintf(&alias, "scan /sdcard/Download"))
             cmd = alias;
+    } else if (!strcmp(cmd, "a")) {
+        if (asprintf(&alias, "audio on"))
+            cmd = alias;
+    } else if (!strcmp(cmd, "aa") || !strcmp(cmd, "A")) {
+        if (asprintf(&alias, "audio off"))
+            cmd = alias;
+    } else if (!strcmp(cmd, "v")) {
+        if (asprintf(&alias, "video on"))
+            cmd = alias;
+    } else if (!strcmp(cmd, "vv") || !strcmp(cmd, "V")) {
+        if (asprintf(&alias, "video off"))
+            cmd = alias;
     }
     if (!strcmp(cmd, "pause") || !strcmp(cmd, "p")) {
         if (tc->screen) {
