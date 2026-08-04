@@ -32,6 +32,7 @@ handle_command(struct sc_terminal_controller *tc, const char *cmd) {
         /* prefix aliases, these should include the space */
         palias[] = { { "b ", "bitrate %s" },
                      { "size ", "video size %s" },
+                     { "v ", "loglevel %s" },
         },
         /* full aliases, these only match if nothing follows */
         falias[] = { { "scan", "scan /sdcard/Download" },
@@ -41,6 +42,9 @@ handle_command(struct sc_terminal_controller *tc, const char *cmd) {
                      { "v", "video on" },
                      { "V", "video off" },
                      { "vv", "video off" },
+                     { "p", "pause" },
+                     { "u", "unpause" },
+                     { "q", "quit" },
         };
     for (i = 0; i < ARRAY_LEN(palias) && !alias; i++)
         if (!strncmp(cmd, palias[i].s, offset = strlen(palias[i].s)))
@@ -50,7 +54,7 @@ handle_command(struct sc_terminal_controller *tc, const char *cmd) {
         if (!strcmp(cmd, falias[i].s))
             if (asprintf(&alias, falias[i].t) >= 0)
                 cmd = alias;
-    if (!strcmp(cmd, "pause") || !strcmp(cmd, "p")) {
+    if (!strcmp(cmd, "pause")) {
         if (tc->screen) {
             struct pause_data *data = malloc(sizeof(*data));
             if (data) {
@@ -61,7 +65,7 @@ handle_command(struct sc_terminal_controller *tc, const char *cmd) {
                 }
             }
         }
-    } else if (!strcmp(cmd, "unpause") || !strcmp(cmd, "u")) {
+    } else if (!strcmp(cmd, "unpause")) {
         if (tc->screen) {
             struct pause_data *data = malloc(sizeof(*data));
             if (data) {
@@ -123,7 +127,7 @@ handle_command(struct sc_terminal_controller *tc, const char *cmd) {
         } else {
             LOGW("Activity FPS not configured (use --max-fps with extended syntax)");
         }
-    } else if (!strncmp(cmd, "loglevel ", offset = 9) || !strncmp(cmd, "v ", offset = 2)) {
+    } else if (!strncmp(cmd, "loglevel ", offset = 9)) {
         enum sc_log_level level;
         if ((level = sc_parse_log_level(cmd + offset)) < 0) {
             LOGW("Invalid log level: %s", cmd + offset);
@@ -226,7 +230,7 @@ handle_command(struct sc_terminal_controller *tc, const char *cmd) {
                 free(path);
             }
         }
-    } else if (!strcmp(cmd, "quit") || !strcmp(cmd, "q")) {
+    } else if (!strcmp(cmd, "quit")) {
         sc_push_event(SDL_QUIT);
     } else if (cmd[0] != '\0') {
         if (strcmp(cmd, "help"))
