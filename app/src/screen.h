@@ -31,6 +31,8 @@ struct sc_screen {
 
     bool video;
 
+    char *window_title;
+
     struct sc_display display;
     struct sc_input_manager im;
     struct sc_mouse_capture mc; // only used in mouse relative mode
@@ -126,6 +128,9 @@ sc_screen_destroy(struct sc_screen *screen);
 // screen_destroy()
 void
 sc_screen_hide_window(struct sc_screen *screen);
+
+void
+sc_screen_set_title_suffix(struct sc_screen *screen, const char *string);
 
 // toggle the fullscreen mode
 void

@@ -108,6 +108,10 @@ process_msg(struct sc_receiver *receiver, struct sc_device_msg *msg) {
             break;
         case DEVICE_MSG_TYPE_BATTERY_LEVEL:
             LOGV("Device battery level: %" PRIu8 "%%", msg->battery.level);
+            if (receiver->cbs->on_battery_level_changed) {
+                receiver->cbs->on_battery_level_changed(receiver,
+                    msg->battery.level, receiver->cbs_userdata);
+            }
             break;
         case DEVICE_MSG_TYPE_UHID_OUTPUT:
             if (sc_get_log_level() <= SC_LOG_LEVEL_VERBOSE) {

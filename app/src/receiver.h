@@ -4,6 +4,7 @@
 #include "common.h"
 
 #include <stdbool.h>
+#include <stdint.h>
 
 #include "uhid/uhid_output.h"
 #include "util/acksync.h"
@@ -26,6 +27,8 @@ struct sc_receiver {
 
 struct sc_receiver_callbacks {
     void (*on_ended)(struct sc_receiver *receiver, bool error, void *userdata);
+    void (*on_battery_level_changed)(struct sc_receiver *receiver,
+                                     uint8_t level, void *userdata);
 };
 
 bool

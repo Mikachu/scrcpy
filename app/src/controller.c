@@ -17,6 +17,19 @@ sc_controller_receiver_on_ended(struct sc_receiver *receiver, bool error,
     controller->cbs->on_ended(controller, error, controller->cbs_userdata);
 }
 
+static void
+sc_controller_receiver_on_battery_level_changed(struct sc_receiver *receiver,
+                                                uint8_t level,
+                                                void *userdata) {
+    (void) receiver;
+
+    struct sc_controller *controller = userdata;
+    if (controller->cbs->on_battery_level_changed) {
+        controller->cbs->on_battery_level_changed(controller, level,
+                                                   controller->cbs_userdata);
+    }
+}
+
 bool
 sc_controller_init(struct sc_controller *controller, sc_socket control_socket,
                    const struct sc_controller_callbacks *cbs,
@@ -32,6 +45,7 @@ sc_controller_init(struct sc_controller *controller, sc_socket control_socket,
 
     static const struct sc_receiver_callbacks receiver_cbs = {
         .on_ended = sc_controller_receiver_on_ended,
+        .on_battery_level_changed = sc_controller_receiver_on_battery_level_changed,
     };
 
     ok = sc_receiver_init(&controller->receiver, control_socket, &receiver_cbs,

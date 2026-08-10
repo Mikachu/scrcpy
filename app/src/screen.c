@@ -336,6 +336,7 @@ sc_screen_init(struct sc_screen *screen,
     screen->maximized = false;
     screen->minimized = false;
     screen->paused = false;
+    screen->window_title = NULL;
     screen->resume_frame = NULL;
     screen->orientation = SC_ORIENTATION_0;
 
@@ -380,6 +381,8 @@ sc_screen_init(struct sc_screen *screen,
 
     const char *title = params->window_title;
     assert(title);
+
+    screen->window_title = strdup(title);
 
     int x = SDL_WINDOWPOS_UNDEFINED;
     int y = SDL_WINDOWPOS_UNDEFINED;
@@ -506,6 +509,7 @@ error_destroy_fps_counter:
 error_destroy_frame_buffer:
     sc_frame_buffer_destroy(&screen->fb);
 
+    free(screen->window_title);
     return false;
 }
 
@@ -546,6 +550,22 @@ sc_screen_hide_window(struct sc_screen *screen) {
 }
 
 void
+sc_screen_set_title_suffix(struct sc_screen *screen, const char *string) {
+    if (!screen->window_title) {
+        return;
+    }
+
+    if (!string) {
+        SDL_SetWindowTitle(screen->window, screen->window_title);
+        return;
+    }
+
+    char title[256];
+    snprintf(title, sizeof(title), "%s (%s)", screen->window_title, string);
+    SDL_SetWindowTitle(screen->window, title);
+}
+
+void
 sc_screen_interrupt(struct sc_screen *screen) {
     sc_fps_counter_interrupt(&screen->fps_counter);
 }
@@ -565,6 +585,7 @@ sc_screen_destroy(struct sc_screen *screen) {
     SDL_DestroyWindow(screen->window);
     sc_fps_counter_destroy(&screen->fps_counter);
     sc_frame_buffer_destroy(&screen->fb);
+    free(screen->window_title);
 }
 
 static void

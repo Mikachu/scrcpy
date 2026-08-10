@@ -94,6 +94,7 @@ struct scrcpy {
     };
     struct sc_timeout timeout;
     struct sc_activity_fps activity_fps;
+    bool screen_initialized;
 #ifdef __linux__
     struct sc_terminal_controller terminal_controller;
 #endif
@@ -340,6 +341,42 @@ sc_controller_on_ended(struct sc_controller *controller, bool error,
     }
 }
 
+struct sc_battery_task_data {
+    struct scrcpy *s;
+    uint8_t level;
+};
+
+static void
+do_set_battery_level(void *userdata) {
+    struct sc_battery_task_data *data = userdata;
+    if (data->s->screen_initialized) {
+        char level[5];
+        snprintf(level, 5, "%d%%", data->level);
+        sc_screen_set_title_suffix(&data->s->screen, level);
+    }
+    free(data);
+}
+
+static void
+sc_controller_on_battery_level_changed(struct sc_controller *controller,
+                                       uint8_t level, void *userdata) {
+    (void) controller;
+
+    struct scrcpy *s = userdata;
+    struct sc_battery_task_data *data = malloc(sizeof(*data));
+    if (!data) {
+        LOG_OOM();
+        return;
+    }
+    data->s = s;
+    data->level = level;
+
+    if (!sc_post_to_main_thread(do_set_battery_level, data)) {
+        LOGW("Could not post battery level to main thread");
+        free(data);
+    }
+}
+
 static void
 sc_server_on_connection_failed(struct sc_server *server, void *userdata) {
     (void) server;
@@ -407,6 +444,8 @@ scrcpy(struct scrcpy_options *options) {
 #endif
     struct scrcpy *s = &scrcpy;
 
+    s->screen_initialized = false;
+
     // Minimal SDL initialization
     if (SDL_Init(SDL_INIT_EVENTS)) {
         LOGE("Could not initialize SDL: %s", SDL_GetError());
@@ -434,7 +473,6 @@ scrcpy(struct scrcpy_options *options) {
 #endif
     bool controller_initialized = false;
     bool controller_started = false;
-    bool screen_initialized = false;
     bool timeout_initialized = false;
     bool timeout_started = false;
     bool activity_fps_initialized = false;
@@ -669,10 +707,11 @@ scrcpy(struct scrcpy_options *options) {
 
     static const struct sc_controller_callbacks controller_cbs = {
         .on_ended = sc_controller_on_ended,
+        .on_battery_level_changed = sc_controller_on_battery_level_changed,
     };
 
     if (!sc_controller_init(&s->controller, s->server.control_socket,
-        &controller_cbs, NULL)) {
+        &controller_cbs, s)) {
         goto end;
     }
     controller_initialized = true;
@@ -870,7 +909,7 @@ aoa_complete:
         if (!sc_screen_init(&s->screen, &screen_params)) {
             goto end;
         }
-        screen_initialized = true;
+        s->screen_initialized = true;
 
         if (activity_fps_initialized) {
             s->screen.im.on_activity = sc_activity_fps_notify_activity;
@@ -1027,7 +1066,7 @@ aoa_complete:
     }
 #endif
 
-    if (screen_initialized) {
+    if (s->screen_initialized) {
         // Close the window immediately on closing, because screen_destroy()
         // may only be called once the video demuxer thread is joined (it may
         // take time)
@@ -1071,7 +1110,7 @@ end:
     if (recorder_initialized) {
         sc_recorder_stop(&s->recorder);
     }
-    if (screen_initialized) {
+    if (s->screen_initialized) {
         sc_screen_interrupt(&s->screen);
     }
 
@@ -1123,7 +1162,7 @@ end:
     // Destroy the screen only after the video demuxer is guaranteed to be
     // finished, because otherwise the screen could receive new frames after
     // destruction
-    if (screen_initialized) {
+    if (s->screen_initialized) {
         sc_screen_join(&s->screen);
         sc_screen_destroy(&s->screen);
     }

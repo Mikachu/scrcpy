@@ -4,6 +4,7 @@
 #include "common.h"
 
 #include <stdbool.h>
+#include <stdint.h>
 
 #include "control_msg.h"
 #include "receiver.h"
@@ -30,6 +31,8 @@ struct sc_controller {
 struct sc_controller_callbacks {
     void (*on_ended)(struct sc_controller *controller, bool error,
                      void *userdata);
+    void (*on_battery_level_changed)(struct sc_controller *controller,
+                                     uint8_t level, void *userdata);
 };
 
 bool
