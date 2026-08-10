@@ -3,6 +3,7 @@ package com.genymobile.scrcpy.control;
 import com.genymobile.scrcpy.AndroidVersions;
 import com.genymobile.scrcpy.AsyncProcessor;
 import com.genymobile.scrcpy.CleanUp;
+import com.genymobile.scrcpy.FakeContext;
 import com.genymobile.scrcpy.Options;
 import com.genymobile.scrcpy.device.Device;
 import com.genymobile.scrcpy.device.DeviceApp;
@@ -32,8 +33,10 @@ import com.genymobile.scrcpy.wrappers.ClipboardManager;
 import com.genymobile.scrcpy.wrappers.InputManager;
 import com.genymobile.scrcpy.wrappers.ServiceManager;
 
+import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
+import android.os.BatteryManager;
 import android.os.Build;
 import android.os.SystemClock;
 import android.util.Pair;
@@ -48,6 +51,7 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -121,6 +125,8 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
     private Streamer videoStreamer;
     private Streamer audioStreamer;
     private AsyncProcessor audioEncoder;
+    private ScheduledFuture<?> batteryPollFuture;
+    private int lastBatteryLevel = -1;
 
     public Controller(ControlChannel controlChannel, CleanUp cleanUp, Options options) {
         this.displayId = options.getDisplayId();
@@ -157,6 +163,7 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
                 Ln.w("No clipboard manager, copy-paste between device and computer will not work");
             }
         }
+        startBatteryPolling();
     }
 
     @Override
@@ -287,6 +294,9 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
             thread.interrupt();
         }
         sender.stop();
+        if (batteryPollFuture != null) {
+            batteryPollFuture.cancel(false);
+        }
         SurfaceEncoder se = surfaceEncoder;
         if (se != null) {
             se.stop();
@@ -1003,5 +1013,25 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
         } catch (Throwable t) {
             Ln.e("MediaStore scan failed for " + path, t);
         }
+    }
+
+    private void startBatteryPolling() {
+        BatteryManager batteryManager = (BatteryManager) FakeContext.get().getSystemService(Context.BATTERY_SERVICE);
+        if (batteryManager == null) {
+            Ln.w("No battery manager, battery level will not be reported");
+            return;
+        }
+
+        batteryPollFuture = EXECUTOR.scheduleAtFixedRate(() -> {
+            int level = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY);
+            if (level < 0 || level > 100) {
+                Ln.w("Got strange battery level: " + level);
+                return;
+            }
+            if (level != lastBatteryLevel) {
+                lastBatteryLevel = level;
+                sender.send(DeviceMessage.createBattery(level));
+            }
+        }, 0, 120, TimeUnit.SECONDS);
     }
 }

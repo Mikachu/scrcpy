@@ -71,6 +71,12 @@ sc_device_msg_deserialize(const uint8_t *buf, size_t len,
 
             return 5 + size;
         }
+        case DEVICE_MSG_TYPE_BATTERY_LEVEL:
+            if (len < 2) {
+                return 0; // no complete message
+            }
+            msg->battery.level = buf[1];
+            return 2;
         default:
             LOGW("Unknown device message type: %d", (int) msg->type);
             return -1; // error, we cannot recover

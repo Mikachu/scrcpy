@@ -39,6 +39,9 @@ public class DeviceMessageWriter {
                 dos.writeShort(data.length);
                 dos.write(data);
                 break;
+            case DeviceMessage.TYPE_BATTERY_LEVEL:
+                dos.writeByte(msg.getBatteryLevel());
+                break;
             default:
                 throw new ControlProtocolException("Unknown event type: " + type);
         }

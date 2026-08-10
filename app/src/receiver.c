@@ -106,6 +106,9 @@ process_msg(struct sc_receiver *receiver, struct sc_device_msg *msg) {
             sc_acksync_ack(receiver->acksync, msg->ack_clipboard.sequence);
             // No allocation to free in the msg
             break;
+        case DEVICE_MSG_TYPE_BATTERY_LEVEL:
+            LOGV("Device battery level: %" PRIu8 "%%", msg->battery.level);
+            break;
         case DEVICE_MSG_TYPE_UHID_OUTPUT:
             if (sc_get_log_level() <= SC_LOG_LEVEL_VERBOSE) {
                 char *hex = sc_str_to_hex_string(msg->uhid_output.data,

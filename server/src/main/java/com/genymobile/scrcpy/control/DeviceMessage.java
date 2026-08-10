@@ -5,12 +5,14 @@ public final class DeviceMessage {
     public static final int TYPE_CLIPBOARD = 0;
     public static final int TYPE_ACK_CLIPBOARD = 1;
     public static final int TYPE_UHID_OUTPUT = 2;
+    public static final int TYPE_BATTERY_LEVEL = 3;
 
     private int type;
     private String text;
     private long sequence;
     private int id;
     private byte[] data;
+    private int batteryLevel;
 
     private DeviceMessage() {
     }
@@ -35,6 +37,17 @@ public final class DeviceMessage {
         event.id = id;
         event.data = data;
         return event;
+    }
+
+    public static DeviceMessage createBattery(int level) {
+        DeviceMessage event = new DeviceMessage();
+        event.type = TYPE_BATTERY_LEVEL;
+        event.batteryLevel = level;
+        return event;
+    }
+
+    public int getBatteryLevel() {
+        return batteryLevel;
     }
 
     public int getType() {
