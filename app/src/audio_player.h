@@ -24,10 +24,14 @@ struct sc_audio_player {
 
     SDL_AudioDeviceID device;
     struct sc_audio_regulator audioreg;
+
+    double amplification;
 };
 
 void
 sc_audio_player_init(struct sc_audio_player *ap, sc_tick target_buffering,
                      sc_tick audio_output_buffer);
+bool
+sc_audio_player_set_amplification(struct sc_audio_player *ap, double factor);
 
 #endif

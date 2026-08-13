@@ -219,6 +219,16 @@ handle_command(struct sc_terminal_controller *tc, const char *cmd) {
                 LOGW("Could not push stream enabled message");
             }
         }
+    } else if (!strncmp(cmd, "amp ", offset = 4)) {
+        if (tc->ap) {
+            double factor = atof(cmd + offset);
+            if (factor <= 0)
+                LOGW("Invalid amplification factor: %s", cmd + offset);
+            else
+                sc_audio_player_set_amplification(tc->ap, factor);
+        } else {
+            LOGW("Audio playback not enabled, cannot set amplification");
+        }
     } else if (!strncmp(cmd, "scan ", offset = 5)) {
         if (tc->controller) {
             char *path = strdup(cmd + offset);
@@ -235,7 +245,7 @@ handle_command(struct sc_terminal_controller *tc, const char *cmd) {
     } else if (cmd[0] != '\0') {
         if (strcmp(cmd, "help"))
             LOGW("Unknown terminal command: %s", cmd);
-        LOGI("Commands: pause, unpause, fps N, bitrate B, afps [...], listapps, start [app], quit, video on/off, audio on/off, video size [ max pixels | n%% ]");
+        LOGI("Commands: pause, unpause, fps N, bitrate B, afps [...], listapps, start [app], quit, video on/off, audio on/off, video size [ max pixels | n%% ], amp x.x");
     }
     free(alias);
 }

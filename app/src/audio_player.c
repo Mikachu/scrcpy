@@ -57,6 +57,16 @@ sc_audio_player_frame_sink_open(struct sc_frame_sink *sink,
         return false;
     }
 
+    if (ap->amplification != 1.0) {
+        // Re-apply the amplification requested before this (re-)open,
+        // since sc_audio_regulator_init() always starts at rematrix_volume=1.0
+        if (!sc_audio_regulator_set_amplification(&ap->audioreg,
+                                                   ap->amplification)) {
+            LOGW("Could not re-apply audio amplification %g",
+                 ap->amplification);
+        }
+    }
+
     uint64_t aout_samples = ap->output_buffer_duration * ctx->sample_rate
                                                        / SC_TICK_FREQ;
     assert(aout_samples <= 0xFFFF);
@@ -107,6 +117,7 @@ sc_audio_player_init(struct sc_audio_player *ap, sc_tick target_buffering,
                      sc_tick output_buffer_duration) {
     ap->target_buffering_delay = target_buffering;
     ap->output_buffer_duration = output_buffer_duration;
+    ap->amplification = 1.0;
 
     static const struct sc_frame_sink_ops ops = {
         .open = sc_audio_player_frame_sink_open,
@@ -115,4 +126,14 @@ sc_audio_player_init(struct sc_audio_player *ap, sc_tick target_buffering,
     };
 
     ap->frame_sink.ops = &ops;
+}
+
+bool
+sc_audio_player_set_amplification(struct sc_audio_player *ap, double factor) {
+    // Always remember the requested factor, even if audio is currently
+    // closed/disabled, so it is applied again on the next open()
+    ap->amplification = factor;
+
+    sc_audio_regulator_set_amplification(&ap->audioreg, factor);
+    return true;
 }

@@ -76,4 +76,8 @@ void
 sc_audio_regulator_pull(struct sc_audio_regulator *ar, uint8_t *out,
                         uint32_t samples);
 
+bool
+sc_audio_regulator_set_amplification(struct sc_audio_regulator *ar,
+                                     double factor);
+
 #endif

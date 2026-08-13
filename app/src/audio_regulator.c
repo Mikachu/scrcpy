@@ -448,6 +448,36 @@ error_free_swr_ctx:
     return false;
 }
 
+bool
+sc_audio_regulator_set_amplification(struct sc_audio_regulator *ar,
+                                     double factor) {
+    sc_mutex_lock(&ar->mutex);
+
+    if (!ar->swr_ctx) {
+        // Not currently initialized (e.g. audio disabled)
+        sc_mutex_unlock(&ar->mutex);
+        return false;
+    }
+
+    // rematrix_volume AVOption valid range is -1000..1000 (see FFmpeg
+    // libswresample/swresample.c option table)
+    av_opt_set_double(ar->swr_ctx, "rematrix_volume", factor, 0);
+
+    // Changing rematrix_volume only takes effect on (re-)init: swr_init()
+    // is safe/idempotent to call again on an already-initialized context.
+    int ret = swr_init(ar->swr_ctx);
+    if (ret) {
+        LOGE("Failed to re-initialize the resampling context "
+             "for amplification %g", factor);
+        sc_mutex_unlock(&ar->mutex);
+        return false;
+    }
+
+    sc_mutex_unlock(&ar->mutex);
+    LOGV("Audio amplification set to %gx", factor);
+    return true;
+}
+
 void
 sc_audio_regulator_destroy(struct sc_audio_regulator *ar) {
     free(ar->swr_buf);
