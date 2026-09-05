@@ -117,6 +117,10 @@ public final class AudioPlaybackCapture implements AudioCapture {
 
     @Override
     public void start() throws AudioCaptureException {
+        if (recorder != null) {
+            recorder.startRecording();
+            return;
+        }
         recorder = createAudioRecord();
         recorder.startRecording();
         reader = new AudioRecordReader(recorder);
@@ -126,7 +130,7 @@ public final class AudioPlaybackCapture implements AudioCapture {
     public void stop() {
         if (recorder != null) {
             // Will call .stop() if necessary, without throwing an IllegalStateException
-            recorder.release();
+            recorder.stop();
         }
     }
 
