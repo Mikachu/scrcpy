@@ -128,6 +128,20 @@ sc_demuxer_recv_packet(struct sc_demuxer *demuxer, AVPacket *packet) {
         return SC_RECV_EOS;
     }
 
+    if (demuxer->set_recv_date) {
+        sc_tick recv_date = sc_tick_now();
+
+        // Store the recv date as an opaque ref
+        packet->opaque_ref = av_buffer_alloc(sizeof(sc_tick));
+        if (!packet->opaque_ref) {
+            av_packet_unref(packet);
+            LOG_OOM();
+            return false;
+        }
+
+        *(sc_tick *) packet->opaque_ref->data = recv_date;
+    }
+
     if (pts_flags & SC_PACKET_FLAG_CONFIG) {
         packet->pts = AV_NOPTS_VALUE;
     } else {
@@ -209,6 +223,11 @@ run_demuxer(void *data) {
         if (!codec_ctx) {
             LOG_OOM();
             break;
+        }
+
+        if (demuxer->set_recv_date) {
+            // Propagate AVPacket.opaque_ref (the recv_date) to the decoded AVFrame
+            codec_ctx->flags |= AV_CODEC_FLAG_COPY_OPAQUE;
         }
 
         codec_ctx->flags |= AV_CODEC_FLAG_LOW_DELAY;
@@ -332,12 +351,15 @@ run_demuxer(void *data) {
 
 void
 sc_demuxer_init(struct sc_demuxer *demuxer, const char *name, sc_socket socket,
+                bool set_recv_date,
                 const struct sc_demuxer_callbacks *cbs, void *cbs_userdata) {
     assert(socket != SC_SOCKET_NONE);
 
     demuxer->name = name; // statically allocated
     demuxer->socket = socket;
     sc_packet_source_init(&demuxer->packet_source);
+
+    demuxer->set_recv_date = set_recv_date;
 
     assert(cbs && cbs->on_ended);
 

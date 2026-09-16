@@ -639,13 +639,17 @@ scrcpy(struct scrcpy_options *options) {
         file_pusher_initialized = true;
     }
 
+    bool has_video_buffer = options->video_buffer || options->v4l2_buffer;
+
     if (true /*options->video*/) {
         static const struct sc_demuxer_callbacks video_demuxer_cbs = {
             .on_ended = sc_video_demuxer_on_ended,
             .on_paused = sc_video_demuxer_on_paused,
         };
+        // If a video buffer is present, then the recv date must be set
+        bool set_recv_date = has_video_buffer;
         sc_demuxer_init(&s->video_demuxer, "video", s->server.video_socket,
-                        &video_demuxer_cbs, s);
+                        set_recv_date, &video_demuxer_cbs, s);
     }
 
     if (true /*options->audio*/) {
@@ -653,7 +657,7 @@ scrcpy(struct scrcpy_options *options) {
             .on_ended = sc_audio_demuxer_on_ended,
         };
         sc_demuxer_init(&s->audio_demuxer, "audio", s->server.audio_socket,
-                        &audio_demuxer_cbs, options);
+                        false, &audio_demuxer_cbs, options);
     }
 
     bool needs_video_decoder = true /*options->video_playback*/;
@@ -662,6 +666,8 @@ scrcpy(struct scrcpy_options *options) {
     needs_video_decoder |= !!options->v4l2_device;
 #endif
     if (needs_video_decoder) {
+        // If a video buffer is present, then the recv date must be forwarded
+        // from the AVPacket to the AVFrame
         sc_decoder_init(&s->video_decoder, "video");
         sc_packet_source_add_sink(&s->video_demuxer.packet_source,
                                   &s->video_decoder.packet_sink);
